@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ContentView: View {
+struct MainScreen: View {
   var body: some View {
     VStack {
 //      ClickWheelView(diameter: 350) { button in
