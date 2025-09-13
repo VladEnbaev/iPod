@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		D95699E82E7608420015E232 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = D95699E72E7608420015E232 /* ComposableArchitecture */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		D98BA0542E0324C100C37970 /* iPod.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iPod.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D95699E82E7608420015E232 /* ComposableArchitecture in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = iPod;
 			packageProductDependencies = (
+				D95699E72E7608420015E232 /* ComposableArchitecture */,
 			);
 			productName = iPod;
 			productReference = D98BA0542E0324C100C37970 /* iPod.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = D98BA04B2E0324C100C37970;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				D95699E62E7608410015E232 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D98BA0552E0324C100C37970 /* Products */;
 			projectDirPath = "";
@@ -324,6 +333,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		D95699E62E7608410015E232 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/pointfreeco/swift-composable-architecture.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.22.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		D95699E72E7608420015E232 /* ComposableArchitecture */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D95699E62E7608410015E232 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
+			productName = ComposableArchitecture;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = D98BA04C2E0324C100C37970 /* Project object */;
 }

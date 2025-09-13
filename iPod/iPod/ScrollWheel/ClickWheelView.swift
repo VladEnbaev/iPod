@@ -33,9 +33,8 @@ struct ClickWheelView: View {
   }
   
   
-  // MARK: - Subtypes
+  // MARK: - Parameters
   
-  let diameter: CGFloat
   let onButtonPress: ((ButtonType) -> Void)?
   let onScroll: ((ScrollDirection) -> Void)?
   
@@ -45,16 +44,6 @@ struct ClickWheelView: View {
   @State private var touchedButton: ButtonType? = nil
   @State private var isScrolling = false
   @State private var initialAngle: CGFloat = 0.0
-  
-  private var centerDiameter: CGFloat {
-    diameter * 67/284
-  }
-  private var wheelDiameter: CGFloat {
-    diameter * 200/284
-  }
-  private var buttonDiameter: CGFloat {
-    diameter * 255/284
-  }
   
   private var borderGradient: AngularGradient {
     AngularGradient(
@@ -73,11 +62,9 @@ struct ClickWheelView: View {
   // MARK: - Init
   
   init(
-    diameter: CGFloat = 300.0,
     onButtonPress: ((ButtonType) -> Void)? = nil,
     onScroll: ((ScrollDirection) -> Void)? = nil
   ) {
-    self.diameter = diameter
     self.onButtonPress = onButtonPress
     self.onScroll = onScroll
   }
@@ -86,84 +73,80 @@ struct ClickWheelView: View {
   // MARK: - Body
   
   var body: some View {
-    Image(.bevel)
-      .resizable()
-      .overlay {
-        wheelOverlay
-          .padding()
+    GeometryReader { proxy in
+      let diameter = min(proxy.size.width, proxy.size.height)
+      
+      ZStack {
+        Image(.bevel)
+          .resizable()
+        wheelOverlay(diameter: diameter)
       }
       .frame(width: diameter, height: diameter)
+    }
   }
   
   
   // MARK: - Wheel Overlay
   
-  private var wheelOverlay: some View {
-    ZStack(alignment: .center) {
-      ForEach(0..<4) { index in
-        Group {
+  private func wheelOverlay(diameter: CGFloat) -> some View {
+    Group {
+      let wheelDiameter = diameter * 0.8
+      let centerDiameter = diameter * 0.25
+      
+      ZStack(alignment: .center) {
+        ForEach(0..<4) { index in
           Circle()
             .trim(from: CGFloat(index) * 0.25, to: CGFloat(index + 1) * 0.25)
-            .stroke(lineWidth: (buttonDiameter - wheelDiameter) / 2)
+            .stroke(lineWidth: (diameter - wheelDiameter) / 2)
             .fill(touchedButton?.rawValue == index ? .black.opacity(0.1) : .clear)
             .frame(
-              width: (buttonDiameter + wheelDiameter) / 2,
-              height: (buttonDiameter + wheelDiameter) / 2
+              width: (diameter + wheelDiameter) / 2,
+              height: (diameter + wheelDiameter) / 2
             )
             .rotationEffect(.degrees(Double(index) * 360))
           
           Rectangle()
             .fill(borderGradient)
-            .frame(width: 1.5, height: (buttonDiameter - wheelDiameter) / 2)
-            .frame(maxHeight: buttonDiameter, alignment: .bottom)
+            .frame(width: 1.5, height: (diameter - wheelDiameter) / 2)
+            .frame(maxHeight: diameter, alignment: .bottom)
             .rotationEffect(.degrees(Double(index) * 90))
-          
-          Rectangle()
-            .fill(borderGradient)
-            .frame(width: 1.5, height: (buttonDiameter - wheelDiameter) / 2)
-            .rotationEffect(.degrees(0))
-            .frame(maxHeight: buttonDiameter, alignment: .top)
-            .rotationEffect(.degrees(Double(index + 1) * 90))
         }
-      }
-      .rotationEffect(.degrees(-45))
-      
-      Circle()
-        .strokeBorder(borderGradient, lineWidth: 1.5)
-        .frame(width: wheelDiameter, height: wheelDiameter)
-      
-      Circle()
-        .strokeBorder(borderGradient, lineWidth: 1.5)
-        .frame(width: buttonDiameter, height: buttonDiameter)
-      
-      
-      Group {
+        .rotationEffect(.degrees(-45))
+        
         Circle()
-          .stroke(borderGradient, lineWidth: 1.5)
+          .strokeBorder(borderGradient, lineWidth: 1.5)
+          .frame(width: wheelDiameter, height: wheelDiameter)
+        
         Circle()
-          .fill(touchedButton == .center ? Color.black.opacity(0.1) : Color.clear)
+          .strokeBorder(borderGradient, lineWidth: 1.5)
+          .frame(width: diameter, height: diameter)
+        
+        
+        Group {
+          Circle()
+            .stroke(borderGradient, lineWidth: 1.5)
+          Circle()
+            .fill(touchedButton == .center ? Color.black.opacity(0.1) : Color.clear)
+        }
+        .frame(width: centerDiameter, height: centerDiameter)
       }
-      .frame(width: centerDiameter, height: centerDiameter)
-      .onTapGesture {
-        touchedButton = .center
-        onButtonPress?(.center)
-      }
-    }
-    .contentShape(.circle)
-    .gesture(DragGesture(minimumDistance: 0)
-      .onChanged { value in
-        handleTouch(location: value.location)
-      }
-      .onEnded { _ in
-        isScrolling = false
-        touchedButton = nil
-      }
-    )
-    .onChange(of: touchedButton) { newValue in
-      print("Touch: \(touchedButton?.rawValue)")
+      .contentShape(.circle)
+      .gesture(DragGesture(minimumDistance: 0)
+        .onChanged { value in
+          handleTouch(
+            location: value.location,
+            diameter: diameter,
+            wheelDiameter: wheelDiameter,
+            centerDiameter: centerDiameter
+          )
+        }
+        .onEnded { _ in
+          isScrolling = false
+          touchedButton = nil
+        }
+      )
     }
   }
-
 }
 
 
@@ -171,7 +154,12 @@ struct ClickWheelView: View {
 
 extension ClickWheelView {
   
-  private func handleTouch(location: CGPoint) {
+  private func handleTouch(
+    location: CGPoint,
+    diameter: CGFloat,
+    wheelDiameter: CGFloat,
+    centerDiameter: CGFloat
+  ) {
     let center = CGPoint(x: diameter / 2, y: diameter / 2)
     let deltaX = location.x - center.x
     let deltaY = location.y - center.y
@@ -197,7 +185,6 @@ extension ClickWheelView {
       }
       
     case (wheelDiameter / 2)..<(diameter / 2):
-//      print(normalizedAngle)
       if normalizedAngle < 45 || normalizedAngle > 315 {
         touchedButton = .next
         
@@ -218,10 +205,11 @@ extension ClickWheelView {
 
 struct ScrollWheelView_Previews: PreviewProvider {
   static var previews: some View {
-    ClickWheelView(diameter: 350) { button in
+    ClickWheelView() { button in
       print("Button Pressed: \(button)")
     } onScroll: { direction in
       print("Scrolled: \(direction)")
     }
+    .padding(40)
   }
 }
