@@ -1,42 +1,11 @@
 import SwiftUI
 
-struct ClickWheelView: View {
-  
-  
-  // MARK: - Subtypes
-  
-  enum ButtonType: Int {
-    case next
-    case play
-    case previous
-    case menu
-    case center
-    
-    var icon: Image {
-      switch self {
-      case .play:
-        Image(uiImage: .checkmark)
-      case .menu:
-        Image(uiImage: .actions)
-      case .next:
-        Image(uiImage: .add)
-      case .previous:
-        Image(uiImage: .remove)
-      case .center:
-        Image(uiImage: .strokedCheckmark)
-      }
-    }
-  }
-  
-  enum ScrollDirection {
-    case left, right
-  }
-  
+struct ScrollWheelView: View {
   
   // MARK: - Parameters
   
-  let onButtonPress: ((ButtonType) -> Void)?
-  let onScroll: ((ScrollDirection) -> Void)?
+  let onButtonPress: (ButtonType) -> Void
+  let onScroll: (ScrollDirection) -> Void
   
   
   // MARK: - Private Parameters
@@ -62,8 +31,8 @@ struct ClickWheelView: View {
   // MARK: - Init
   
   init(
-    onButtonPress: ((ButtonType) -> Void)? = nil,
-    onScroll: ((ScrollDirection) -> Void)? = nil
+    onButtonPress: @escaping (ButtonType) -> Void,
+    onScroll: @escaping (ScrollDirection) -> Void
   ) {
     self.onButtonPress = onButtonPress
     self.onScroll = onScroll
@@ -152,7 +121,7 @@ struct ClickWheelView: View {
 
 // MARK: - Private Methods
 
-extension ClickWheelView {
+extension ScrollWheelView {
   
   private func handleTouch(
     location: CGPoint,
@@ -170,7 +139,7 @@ extension ClickWheelView {
     switch distance {
     case 0..<(centerDiameter / 2):
       touchedButton = .center
-      onButtonPress?(.center)
+      onButtonPress(.center)
       
     case (centerDiameter / 2)..<(wheelDiameter / 2):
       if !isScrolling {
@@ -179,7 +148,7 @@ extension ClickWheelView {
       } else {
         let delta = normalizedAngle - initialAngle
         if abs(delta) > 18 {
-          onScroll?(delta > 0 ? .right : .left)
+          onScroll(delta > 0 ? .right : .left)
           initialAngle = normalizedAngle
         }
       }
@@ -187,15 +156,19 @@ extension ClickWheelView {
     case (wheelDiameter / 2)..<(diameter / 2):
       if normalizedAngle < 45 || normalizedAngle > 315 {
         touchedButton = .next
+        onButtonPress(.next)
         
       } else if (45..<135).contains(normalizedAngle) {
         touchedButton = .play
+        onButtonPress(.play)
         
       } else if (135..<225).contains(normalizedAngle) {
         touchedButton = .previous
+        onButtonPress(.previous)
         
       } else if (225..<315).contains(normalizedAngle) {
         touchedButton = .menu
+        onButtonPress(.menu)
       }
       
     default: break
@@ -205,7 +178,7 @@ extension ClickWheelView {
 
 struct ScrollWheelView_Previews: PreviewProvider {
   static var previews: some View {
-    ClickWheelView() { button in
+    ScrollWheelView() { button in
       print("Button Pressed: \(button)")
     } onScroll: { direction in
       print("Scrolled: \(direction)")

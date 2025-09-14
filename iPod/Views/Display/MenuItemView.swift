@@ -1,13 +1,26 @@
 import SwiftUI
 
-struct MenuRow: View {
+struct MenuItemView: View {
+  
+  
+  // MARK: - Parameters
   
   let text: String
   let isSelected: Bool
   
-  var foregroundColor: Color {
+  
+  // MARK: - Private Parameters
+  
+  private var foregroundColor: Color {
     isSelected ? .Pod.displayWhite : .Pod.displayBlack
   }
+  
+  private var backgroundColor: Color {
+    isSelected ? .Pod.displayBlack : .Pod.displayWhite
+  }
+  
+  
+  // MARK: - Body
   
   var body: some View {
     HStack(spacing: .zero) {
@@ -24,11 +37,11 @@ struct MenuRow: View {
     .padding(.horizontal, 8)
     .padding(.vertical, 5)
     .frame(height: 30)
-    .background(isSelected ? Color.Pod.displayBlack : .Pod.displayWhite)
+    .background(backgroundColor)
   }
 }
 
 #Preview {
-  MenuRow(text: "Settings", isSelected: true)
+  MenuItemView(text: "Settings", isSelected: true)
     .frame(width: 250)
 }

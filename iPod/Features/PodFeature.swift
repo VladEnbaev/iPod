@@ -1,58 +1,126 @@
 import ComposableArchitecture
 import Foundation
 
-
 @Reducer
 struct PodFeature {
+  
+  
+  // MARK: - State
+  
   @ObservableState
   struct State: Equatable {
-    var selectedMenu: Menu = .main
+    var menuTree: MenuItemTree
+    var currentPath: [MenuItem] = []
+    var selectedIndex: Int = 0
+    var isPlaying: Bool = false
+    var currentTrack: MenuItem?
     
-    enum Menu: Equatable {
-      case main
-      case music
-      case settings
-      // и т.д.
+    var currentItems: [MenuItem] {
+      if currentPath.isEmpty {
+        return menuTree.root.children
+      } else {
+        return currentPath.last?.children ?? []
+      }
+    }
+    
+    var canGoBack: Bool {
+      !currentPath.isEmpty
+    }
+    
+    var canEnterSelected: Bool {
+      let items = currentItems
+      return selectedIndex < items.count && items[selectedIndex].hasChildren
+    }
+    
+    init() {
+      self.menuTree = MenuItemTree.createDefaultTree()
     }
   }
   
+  // MARK: - Action
+  
   enum Action: Equatable {
-    case buttonPressed(ClickWheelView.ButtonType)
-    case scrolled(ClickWheelView.ScrollDirection)
-    // Добавьте другие действия по необходимости
+    case buttonPressed(ButtonType)
+    case scrolled(ScrollDirection)
+    case enterSelectedItem
+    case goBack
+    case playPause
+    case selectItem(Int)
   }
+  
+  
+  // MARK: - Reduce
   
   func reduce(into state: inout State, action: Action) -> Effect<Action> {
     switch action {
     case .buttonPressed(let button):
-      // Обработка нажатий кнопок
       switch button {
       case .menu:
-        state.selectedMenu = .main
+        // Возврат в главное меню
+        state.currentPath = []
+        state.selectedIndex = 0
       case .next:
-        // логика перехода к следующему элементу
-        break
+        // Переход к следующему элементу
+        if state.selectedIndex < state.currentItems.count - 1 {
+          state.selectedIndex += 1
+        }
       case .previous:
-        // логика перехода к предыдущему элементу
-        break
+        // Переход к предыдущему элементу
+        if state.selectedIndex > 0 {
+          state.selectedIndex -= 1
+        }
       case .play:
-        // логика play/pause
-        break
+        return .send(.playPause)
       case .center:
-        // логика выбора
-        break
+        return .send(.enterSelectedItem)
       }
       return .none
+      
     case .scrolled(let direction):
-      // Обработка скролла
       switch direction {
       case .left:
-        // логика скролла влево
-        break
+        // Скролл влево (предыдущий элемент)
+        if state.selectedIndex > 0 {
+          state.selectedIndex -= 1
+        }
       case .right:
-        // логика скролла вправо
-        break
+        // Скролл вправо (следующий элемент)
+        if state.selectedIndex < state.currentItems.count - 1 {
+          state.selectedIndex += 1
+        }
       }
+      return .none
+      
+    case .enterSelectedItem:
+      let items = state.currentItems
+      guard state.selectedIndex < items.count else { return .none }
+      
+      let selectedItem = items[state.selectedIndex]
+      
+      if selectedItem.hasChildren {
+        // Вход в папку
+        state.currentPath.append(selectedItem)
+        state.selectedIndex = 0
+      } else if selectedItem.isPlayable {
+        // Воспроизведение трека/плейлиста
+        state.currentTrack = selectedItem
+        state.isPlaying = true
+      }
+      return .none
+      
+    case .goBack:
+      guard state.canGoBack else { return .none }
+      state.currentPath.removeLast()
+      state.selectedIndex = 0
+      return .none
+      
+    case .playPause:
+      state.isPlaying.toggle()
+      return .none
+      
+    case .selectItem(let index):
+      guard index >= 0 && index < state.currentItems.count else { return .none }
+      state.selectedIndex = index
       return .none
     }
   }
