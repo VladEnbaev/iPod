@@ -40,8 +40,8 @@ struct PodFeature {
   // MARK: - Action
   
   enum Action: Equatable {
-    case buttonPressed(ButtonType)
-    case scrolled(ScrollDirection)
+    case buttonPressed(WheelButtonType)
+    case scrolled(WheelScrollDirection)
     case enterSelectedItem
     case goBack
     case playPause
@@ -60,15 +60,17 @@ struct PodFeature {
         state.currentPath = []
         state.selectedIndex = 0
       case .next:
-        // Переход к следующему элементу
-        if state.selectedIndex < state.currentItems.count - 1 {
-          state.selectedIndex += 1
-        }
+        break
+//        // Переход к следующему элементу
+//        if state.selectedIndex < state.currentItems.count - 1 {
+//          state.selectedIndex += 1
+//        }
       case .previous:
-        // Переход к предыдущему элементу
-        if state.selectedIndex > 0 {
-          state.selectedIndex -= 1
-        }
+        break
+//        // Переход к предыдущему элементу
+//        if state.selectedIndex > 0 {
+//          state.selectedIndex -= 1
+//        }
       case .play:
         return .send(.playPause)
       case .center:

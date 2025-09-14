@@ -4,36 +4,30 @@ struct ScrollWheelView: View {
   
   // MARK: - Parameters
   
-  let onButtonPress: (ButtonType) -> Void
-  let onScroll: (ScrollDirection) -> Void
+  let diameter: CGFloat
+  let onButtonPress: (WheelButtonType) -> Void
+  let onScroll: (WheelScrollDirection) -> Void
   
   
   // MARK: - Private Parameters
   
-  @State private var touchedButton: ButtonType? = nil
+  @State private var touchedButton: WheelButtonType? = nil
   @State private var isScrolling = false
   @State private var initialAngle: CGFloat = 0.0
   
-  private var borderGradient: AngularGradient {
-    AngularGradient(
-      gradient: Gradient(colors: [
-        Color.gray.opacity(0.7), // Сверху непрозрачная
-        Color.gray.opacity(0.2), // Снизу прозрачная
-        Color.gray.opacity(0.7)  // Снова сверху непрозрачная
-      ]),
-      center: .center,
-      startAngle: .degrees(0), // Начало градиента сверху
-      endAngle: .degrees(360) // Полный круг
-    )
+  private var borderColor: Color {
+    Color.gray.opacity(0.7)
   }
   
   
   // MARK: - Init
   
   init(
-    onButtonPress: @escaping (ButtonType) -> Void,
-    onScroll: @escaping (ScrollDirection) -> Void
+    diameter: CGFloat,
+    onButtonPress: @escaping (WheelButtonType) -> Void,
+    onScroll: @escaping (WheelScrollDirection) -> Void
   ) {
+    self.diameter = diameter
     self.onButtonPress = onButtonPress
     self.onScroll = onScroll
   }
@@ -42,16 +36,12 @@ struct ScrollWheelView: View {
   // MARK: - Body
   
   var body: some View {
-    GeometryReader { proxy in
-      let diameter = min(proxy.size.width, proxy.size.height)
-      
-      ZStack {
-        Image(.bevel)
-          .resizable()
-        wheelOverlay(diameter: diameter)
-      }
-      .frame(width: diameter, height: diameter)
+    ZStack {
+      Image(.bevel)
+        .resizable()
+      wheelOverlay(diameter: diameter)
     }
+    .frame(width: diameter, height: diameter)
   }
   
   
@@ -59,7 +49,7 @@ struct ScrollWheelView: View {
   
   private func wheelOverlay(diameter: CGFloat) -> some View {
     Group {
-      let wheelDiameter = diameter * 0.8
+      let wheelDiameter = diameter * 0.81
       let centerDiameter = diameter * 0.25
       
       ZStack(alignment: .center) {
@@ -74,26 +64,38 @@ struct ScrollWheelView: View {
             )
             .rotationEffect(.degrees(Double(index) * 360))
           
+          if let button = WheelButtonType(rawValue: index) {
+            let size = button.getSize(for: diameter)
+            
+            Image(button.icon)
+              .resizable()
+              .frame(width: size.width, height: size.height)
+              .rotationEffect(.degrees(Double(90 - (90 * index))))
+              .padding(index % 2 == 0 ? 0 : 4)
+              .frame(maxHeight: diameter, alignment: .bottom)
+              .rotationEffect(.degrees(Double(index) * 90))
+              .rotationEffect(.degrees(315))
+          }
+            
           Rectangle()
-            .fill(borderGradient)
-            .frame(width: 1.5, height: (diameter - wheelDiameter) / 2)
+            .fill(borderColor)
+            .frame(width: 1, height: (diameter - wheelDiameter) / 2)
             .frame(maxHeight: diameter, alignment: .bottom)
             .rotationEffect(.degrees(Double(index) * 90))
         }
         .rotationEffect(.degrees(-45))
         
         Circle()
-          .strokeBorder(borderGradient, lineWidth: 1.5)
+          .strokeBorder(borderColor, lineWidth: 1)
           .frame(width: wheelDiameter, height: wheelDiameter)
         
         Circle()
-          .strokeBorder(borderGradient, lineWidth: 1.5)
+          .strokeBorder(borderColor, lineWidth: 1)
           .frame(width: diameter, height: diameter)
-        
         
         Group {
           Circle()
-            .stroke(borderGradient, lineWidth: 1.5)
+            .stroke(borderColor, lineWidth: 1)
           Circle()
             .fill(touchedButton == .center ? Color.black.opacity(0.1) : Color.clear)
         }
@@ -114,6 +116,7 @@ struct ScrollWheelView: View {
           touchedButton = nil
         }
       )
+      .shadow(radius: 1)
     }
   }
 }
@@ -134,51 +137,74 @@ extension ScrollWheelView {
     let deltaY = location.y - center.y
     let distance = sqrt(deltaX * deltaX + deltaY * deltaY)
     let angle = atan2(deltaY, deltaX) * 180 / .pi
-    let normalizedAngle = angle < 0 ? angle + 360 : angle
+    let degrees = angle <= 0 ? angle + 360 : angle
     
     switch distance {
     case 0..<(centerDiameter / 2):
-      touchedButton = .center
-      onButtonPress(.center)
+      handleButtonPress(.center)
       
     case (centerDiameter / 2)..<(wheelDiameter / 2):
-      if !isScrolling {
-        initialAngle = normalizedAngle
-        isScrolling = true
-      } else {
-        let delta = normalizedAngle - initialAngle
-        if abs(delta) > 18 {
-          onScroll(delta > 0 ? .right : .left)
-          initialAngle = normalizedAngle
-        }
-      }
+      handleScroll(degrees: degrees)
       
     case (wheelDiameter / 2)..<(diameter / 2):
-      if normalizedAngle < 45 || normalizedAngle > 315 {
-        touchedButton = .next
-        onButtonPress(.next)
+      if degrees < 45 || degrees > 315 {
+        handleButtonPress(.next)
         
-      } else if (45..<135).contains(normalizedAngle) {
-        touchedButton = .play
-        onButtonPress(.play)
+      } else if (45..<135).contains(degrees) {
+        handleButtonPress(.play)
         
-      } else if (135..<225).contains(normalizedAngle) {
-        touchedButton = .previous
-        onButtonPress(.previous)
+      } else if (135..<225).contains(degrees) {
+        handleButtonPress(.previous)
         
-      } else if (225..<315).contains(normalizedAngle) {
-        touchedButton = .menu
-        onButtonPress(.menu)
+      } else if (225..<315).contains(degrees) {
+        handleButtonPress(.menu)
       }
       
     default: break
+    }
+  }
+  
+  private func handleButtonPress(_ button: WheelButtonType) {
+    guard touchedButton == nil else { return }
+    
+    isScrolling = false
+    touchedButton = button
+    onButtonPress(button)
+    Haptics.shared.play(.rigid)
+    print(button)
+  }
+  
+  private func handleScroll(degrees: CGFloat) {
+    touchedButton = nil
+    
+    if !isScrolling {
+      isScrolling = true
+      initialAngle = degrees
+    } else {
+      var delta = degrees - initialAngle
+      
+      if initialAngle > 270.0 && initialAngle <= 360.0,
+         degrees >= 0.0 && degrees < 90.0 {
+        delta = 360.0 - initialAngle + degrees;
+      }
+      
+      if initialAngle >= 0.0 && initialAngle < 90.0,
+         degrees > 270.0 && degrees <= 360.0 {
+        delta = -((360.0 - degrees) + initialAngle);
+      }
+      
+      if abs(delta) > 360/20 {
+        onScroll(delta > 0 ? .right : .left)
+        Haptics.shared.play(.soft)
+        initialAngle = degrees
+      }
     }
   }
 }
 
 struct ScrollWheelView_Previews: PreviewProvider {
   static var previews: some View {
-    ScrollWheelView() { button in
+    ScrollWheelView(diameter: 300) { button in
       print("Button Pressed: \(button)")
     } onScroll: { direction in
       print("Scrolled: \(direction)")

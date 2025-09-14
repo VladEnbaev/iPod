@@ -6,23 +6,27 @@ struct MainScreen: View {
   let store: StoreOf<PodFeature>
   
   var body: some View {
-    VStack(spacing: 40) {
+    VStack(alignment: .center) {
       Spacer()
       
       DisplayView(store: store)
         .frame(height: 220)
         .padding(.horizontal, 50)
+        .padding(.bottom, 40)
       
-      ScrollWheelView(
-        onButtonPress: { store.send(.buttonPressed($0)) },
-        onScroll: { store.send(.scrolled($0)) }
-      )
+      GeometryReader { proxy in
+        let diameter = min(proxy.size.width, proxy.size.height)
+        
+        ScrollWheelView(
+          diameter: diameter,
+          onButtonPress: { store.send(.buttonPressed($0)) },
+          onScroll: { store.send(.scrolled($0)) }
+        )
+      }
       .padding(.horizontal, 30)
-      
-      Spacer()
     }
-    .frame(maxHeight: .infinity, alignment: .center)
-    .background(.white)
+    .padding(.vertical, 50)
+    .background(Color.Pod.caseColor)
   }
 }
 

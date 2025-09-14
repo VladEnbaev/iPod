@@ -11,26 +11,33 @@ struct DisplayView: View {
     WithPerceptionTracking {
       VStack(spacing: .zero) {
         ForEach(0..<store.currentItems.count, id: \.self) { index in
-          MenuItemView(
-            text: store.currentItems[index].title,
-            isSelected: store.selectedIndex == index
-          )
+          WithPerceptionTracking {
+            MenuItemView(
+              text: store.currentItems[index].title,
+              isSelected: store.selectedIndex == index
+            )
+          }
         }
       }
       .frame(maxHeight: .infinity, alignment: .top)
-      .background(Color.Pod.displayWhite)
-      .overlay(
+      .overlay {
+        let shadowRadius: CGFloat = 2
         RoundedRectangle(cornerRadius: cornerRadius)
-          .stroke(Color.black.opacity(0.2), lineWidth: 3)
-          .shadow(radius: 3, x: 5, y: 5)
+          .stroke(Color.black.opacity(0.2), lineWidth: 4)
+          .shadow(
+            color: Color.black, radius: shadowRadius, x: shadowRadius, y: shadowRadius
+          )
           .clipShape(
             RoundedRectangle(cornerRadius: cornerRadius)
           )
-          .shadow(radius: 2, x: -2, y: -2)
+          .shadow(
+            color: Color.black, radius: shadowRadius, x: -shadowRadius, y: -shadowRadius
+          )
           .clipShape(
             RoundedRectangle(cornerRadius: cornerRadius)
           )
-      )
+      }
+      .background(Color.Pod.displayWhite)
       .clipShape(.rect(cornerRadius: cornerRadius))
     }
   }
