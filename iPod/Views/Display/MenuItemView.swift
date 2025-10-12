@@ -25,7 +25,7 @@ struct MenuItemView: View {
   var body: some View {
     HStack(spacing: .zero) {
       Text(text)
-        .font(.chicagoRegular(size: 22))
+        .font(.chicagoRegular())
         .foregroundColor(foregroundColor)
         .frame(maxWidth: .infinity, alignment: .leading)
       Image(.arrowRight)

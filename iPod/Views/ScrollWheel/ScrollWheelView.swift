@@ -171,33 +171,33 @@ extension ScrollWheelView {
     touchedButton = button
     onButtonPress(button)
     Haptics.shared.play(.rigid)
-    print(button)
   }
   
   private func handleScroll(degrees: CGFloat) {
     touchedButton = nil
     
-    if !isScrolling {
+    guard isScrolling else {
       isScrolling = true
       initialAngle = degrees
-    } else {
-      var delta = degrees - initialAngle
-      
-      if initialAngle > 270.0 && initialAngle <= 360.0,
-         degrees >= 0.0 && degrees < 90.0 {
-        delta = 360.0 - initialAngle + degrees;
-      }
-      
-      if initialAngle >= 0.0 && initialAngle < 90.0,
-         degrees > 270.0 && degrees <= 360.0 {
-        delta = -((360.0 - degrees) + initialAngle);
-      }
-      
-      if abs(delta) > 360/20 {
-        onScroll(delta > 0 ? .right : .left)
-        Haptics.shared.play(.soft)
-        initialAngle = degrees
-      }
+      return
+    }
+    
+    var delta = degrees - initialAngle
+    
+    if initialAngle > 270.0 && initialAngle <= 360.0,
+       degrees >= 0.0 && degrees < 90.0 {
+      delta = 360.0 - initialAngle + degrees;
+    }
+    
+    if initialAngle >= 0.0 && initialAngle < 90.0,
+       degrees > 270.0 && degrees <= 360.0 {
+      delta = -((360.0 - degrees) + initialAngle);
+    }
+    
+    if abs(delta) > 18 {
+      onScroll(delta > 0 ? .right : .left)
+      Haptics.shared.play(.soft)
+      initialAngle = degrees
     }
   }
 }

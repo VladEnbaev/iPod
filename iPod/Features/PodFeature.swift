@@ -13,7 +13,7 @@ struct PodFeature {
     var currentPath: [MenuItem] = []
     var selectedIndex: Int = 0
     var isPlaying: Bool = false
-    var currentTrack: MenuItem?
+    var currentTrack: MenuItem
     
     var currentItems: [MenuItem] {
       if currentPath.isEmpty {
@@ -33,7 +33,9 @@ struct PodFeature {
     }
     
     init() {
-      self.menuTree = MenuItemTree.createDefaultTree()
+      let tree = MenuItemTree.createDefaultTree()
+      self.menuTree = tree
+      self.currentTrack = tree.root
     }
   }
   

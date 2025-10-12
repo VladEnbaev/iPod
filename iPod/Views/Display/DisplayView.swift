@@ -9,13 +9,19 @@ struct DisplayView: View {
   
   var body: some View {
     WithPerceptionTracking {
-      VStack(spacing: .zero) {
-        ForEach(0..<store.currentItems.count, id: \.self) { index in
-          WithPerceptionTracking {
-            MenuItemView(
-              text: store.currentItems[index].title,
-              isSelected: store.selectedIndex == index
-            )
+      VStack(spacing: 2) {
+        DisplayHeaderView(
+          title: store.currentTrack.title,
+          status: .playing
+        )
+        VStack(spacing: .zero) {
+          ForEach(0..<store.currentItems.count, id: \.self) { index in
+            WithPerceptionTracking {
+              MenuItemView(
+                text: store.currentItems[index].title,
+                isSelected: store.selectedIndex == index
+              )
+            }
           }
         }
       }

@@ -5,9 +5,10 @@ import SwiftUI
 
 public extension Color {
   enum Pod {
-    public static var displayBlack = Color(hex: "3B3A39")
-    public static var displayWhite = Color(hex: "BDBEB5")
-    public static var caseColor    = Color(hex: "F7F7F7")
+    public static let displayBlack = Color(hex: "3B3A39")
+    public static let displayWhite = Color(hex: "BDBEB5")
+    public static let caseColor    = Color(hex: "F7F7F7")
+    public static let wheelIconColor = Color(hex: "A8ACB0")
   }
 }
 
