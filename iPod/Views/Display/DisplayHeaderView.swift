@@ -21,13 +21,14 @@ struct DisplayHeaderView: View {
         trackStatusView
         Spacer()
       }
-      .padding(.horizontal, 16)
-      .frame(height: 30)
       .overlay {
         Text(title)
           .font(.chicagoRegular())
           .foregroundColor(.Pod.displayBlack)
+          .padding(.horizontal, 20)
       }
+      .padding(.horizontal, 16)
+      .frame(height: 30)
       
       Rectangle()
         .fill(Color.Pod.displayBlack)

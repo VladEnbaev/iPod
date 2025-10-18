@@ -45,6 +45,9 @@ struct MainScreen: View {
     .cornerRadius(35)
     .padding(.vertical, 30)
     .background(.black)
+    .onAppear {
+      store.send(.menu(.loadMediaLibrary))
+    }
   }
 }
 

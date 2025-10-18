@@ -11,19 +11,16 @@ struct DisplayView: View {
     WithPerceptionTracking {
       VStack(spacing: 2) {
         DisplayHeaderView(
-          title: store.currentTrack.title,
+          title: store.menu.currentFolder.title,
           status: .playing
         )
-        VStack(spacing: .zero) {
-          ForEach(0..<store.currentItems.count, id: \.self) { index in
-            WithPerceptionTracking {
-              MenuItemView(
-                text: store.currentItems[index].title,
-                isSelected: store.selectedIndex == index
-              )
-            }
-          }
-        }
+        
+        MenuView(
+          store: store.scope(
+            state: \.menu,
+            action: \.menu
+          )
+        )
       }
       .frame(maxHeight: .infinity, alignment: .top)
       .overlay {
