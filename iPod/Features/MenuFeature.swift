@@ -1,113 +1,156 @@
 import ComposableArchitecture
+import Foundation
+
+// MARK: - Menu Feature
 
 @Reducer
 struct MenuFeature {
-  
   
   // MARK: - State
   
   @ObservableState
   struct State: Equatable {
-    var menuTree: MenuItemTree
-    var pathIndices: [Int] = []
+    // Текущий элемент и история навигации
+    var currentItem: MenuItem
+    var navigationPath: [MenuItem] = []
+    
+    // Выбранный индекс в текущем списке
     var selectedIndex: Int = 0
     
-    init() {
-      menuTree = MenuItemTree.createDefaultTree()
+    // Состояние загрузки
+    var isLoading: Bool = false
+    var errorMessage: String?
+    
+    // Вычисляемые свойства
+    var canGoBack: Bool {
+      !navigationPath.isEmpty
     }
     
-    var currentFolder: MenuItem {
-      var item = menuTree.root
-      for index in pathIndices {
-        item = item.children[index]
-      }
-      return item
+    var currentItems: [MenuItem] {
+      currentItem.children
     }
     
-    var canGoBack: Bool { !pathIndices.isEmpty }
-    var canEnterSelected: Bool {
-      currentFolder.children[selectedIndex].hasChildren
+    var selectedItem: MenuItem? {
+      guard !currentItems.isEmpty else { return nil }
+      guard selectedIndex >= 0 && selectedIndex < currentItems.count else { return nil }
+      return currentItems[selectedIndex]
+    }
+    
+    var title: String {
+      currentItem.title
+    }
+    
+    init(rootItem: MenuItem) {
+      self.currentItem = rootItem
     }
   }
-  
   
   // MARK: - Action
   
   enum Action: Equatable {
+    // Навигация
+    case selectAndNavigate
+    case navigateBack
+    case navigateToRoot
+    
+    // Скролл колесиком
+    case scrollUp
+    case scrollDown
+    
+    // Загрузка данных
     case loadMediaLibrary
-    case mediaLibraryLoaded([MenuItem])
-    case mediaLibraryDenied
-    case enterSelectedItem
-    case scroll(MenuScrollDirection)
-    case goBack
+    case mediaLibraryLoaded
+    case mediaLibraryError(String?)
+    
+    // Выбор элемента (без навигации)
+    case selectItem(at: Int)
   }
-
   
   // MARK: - Dependencies
   
-  @Dependency(\.mediaLibraryClient) var mediaLibraryClient
-  
+  @Dependency(\.menuService) var menuService
   
   // MARK: - Reducer
   
-  func reduce(into state: inout State, action: Action) -> Effect<Action> {
-    switch action {
-    case .loadMediaLibrary:
-      return .run { send in
-        let granted = await mediaLibraryClient.requestAuthorization()
-        guard granted else {
-          await send(.mediaLibraryDenied)
-          return
+  var body: some ReducerOf<Self> {
+    Reduce { state, action in
+      switch action {
+      case .selectAndNavigate:
+        guard let selected = state.selectedItem else {
+          return .none
         }
-        let songs = await mediaLibraryClient.fetchSongs()
-        await send(.mediaLibraryLoaded(songs))
-      }
-      
-    case .mediaLibraryLoaded(let songs):
-      var root = state.menuTree.root
-      if let index = root.children.firstIndex(where: { $0.title == "Songs" }) {
-        root.children[index].children.append(contentsOf: songs)
-      }
-      state.menuTree = MenuItemTree(root: root)
-      
-      return .none
-      
-    case .mediaLibraryDenied:
-      // Можно показать alert пользователю
-      return .none
-      
-    case .enterSelectedItem:
-      let selectedItem = state.currentFolder.children[state.selectedIndex]
-      
-      if selectedItem.hasChildren {
-        state.pathIndices.append(state.selectedIndex)
+        
+        // Если у элемента есть дети - переходим к ним
+        if selected.hasChildren {
+          state.navigationPath.append(state.currentItem)
+          state.currentItem = selected
+          state.selectedIndex = 0
+        } else {
+          // Для треков и плейлистов - пока ничего не делаем
+          // (будет обработано в PodFeature)
+          print("Selected playable item: \(selected.title)")
+        }
+        return .none
+        
+      case .navigateBack:
+        guard let previousItem = state.navigationPath.popLast() else {
+          return .none
+        }
+        state.currentItem = previousItem
         state.selectedIndex = 0
-      }
-      
-      return .none
-      
-    case .scroll(let direction):
-//      state.scrollDirection = direction
-      switch direction {
-      case .top:
-        // Скролл влево (предыдущий элемент)
+        return .none
+        
+      case .navigateToRoot:
+        guard let root = state.navigationPath.first else { return .none }
+        state.currentItem = root
+        state.navigationPath = []
+        state.selectedIndex = 0
+        return .none
+        
+      case .scrollUp:
         if state.selectedIndex > 0 {
           state.selectedIndex -= 1
         }
-      case .bottom:
-        // Скролл вправо (следующий элемент)
-        if state.selectedIndex < state.currentFolder.children.count - 1 {
+        return .none
+        
+      case .scrollDown:
+        if state.selectedIndex < state.currentItems.count - 1 {
           state.selectedIndex += 1
         }
+        return .none
+        
+      case .selectItem(let index):
+        let safeIndex = max(0, min(index, state.currentItems.count - 1))
+        state.selectedIndex = safeIndex
+        return .none
+        
+      case .loadMediaLibrary:
+        state.isLoading = true
+        state.errorMessage = nil
+        
+        return .run { send in
+          do {
+            try await menuService.loadMediaLibrary()
+            await send(.mediaLibraryLoaded)
+          } catch {
+            await send(.mediaLibraryError(error.localizedDescription))
+          }
+        }
+        
+      case .mediaLibraryLoaded:
+        state.isLoading = false
+        
+        // Обновляем текущий элемент из сервиса
+        if let updatedItem = menuService.item(withId: state.currentItem.id) {
+          state.currentItem = updatedItem
+        }
+        return .none
+        
+      case .mediaLibraryError(let errorText):
+        state.isLoading = false
+        state.errorMessage = errorText
+        return .none
       }
-      return .none
-      
-    case .goBack:
-      if state.canGoBack {
-        state.selectedIndex = state.pathIndices.last ?? 0
-        state.pathIndices.removeLast()
-      }
-      return .none
     }
   }
 }

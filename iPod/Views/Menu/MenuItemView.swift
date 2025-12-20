@@ -2,12 +2,10 @@ import SwiftUI
 
 struct MenuItemView: View {
   
-  
   // MARK: - Parameters
   
   let text: String
   let isSelected: Bool
-  
   
   // MARK: - Private Parameters
   
@@ -18,7 +16,6 @@ struct MenuItemView: View {
   private var backgroundColor: Color {
     isSelected ? .Pod.displayBlack : .Pod.displayWhite
   }
-  
   
   // MARK: - Body
   

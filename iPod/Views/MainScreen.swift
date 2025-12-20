@@ -9,19 +9,23 @@ struct MainScreen: View {
     VStack(alignment: .center) {
       Spacer()
       
-      DisplayView(store: store)
-        .frame(height: 220)
-        .padding(.horizontal, 50)
-        .padding(.bottom, 40)
+      WithPerceptionTracking {
+        DisplayView(store: store)
+          .frame(height: 220)
+          .padding(.horizontal, 50)
+          .padding(.bottom, 40)
+      }
       
       GeometryReader { proxy in
         let diameter = min(proxy.size.width, proxy.size.height)
         
-        ScrollWheelView(
-          diameter: diameter,
-          onButtonPress: { store.send(.buttonPressed($0)) },
-          onScroll: { store.send(.scrolled($0)) }
-        )
+        WithPerceptionTracking {
+          ScrollWheelView(
+            diameter: diameter,
+            onButtonPress: { store.send(.wheelButtonPressed($0)) },
+            onScroll: { store.send(.wheelScrolled($0)) }
+          )
+        }
       }
       .padding(.horizontal, 30)
     }
@@ -46,7 +50,7 @@ struct MainScreen: View {
     .padding(.vertical, 30)
     .background(.black)
     .onAppear {
-      store.send(.menu(.loadMediaLibrary))
+      store.send(.initializeMenu)
     }
   }
 }

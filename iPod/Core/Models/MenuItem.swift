@@ -2,7 +2,7 @@ import Foundation
 
 // MARK: - Menu Item Types
 
-enum MenuItemType: Equatable {
+public enum MenuItemType: Equatable {
   case folder
   case track
   case playlist
@@ -13,14 +13,14 @@ enum MenuItemType: Equatable {
 
 // MARK: - Menu Item
 
-struct MenuItem: Identifiable, Equatable {
-  var id = UUID()
-  var title: String
-  var type: MenuItemType
-  var children: [MenuItem]
-  var metadata: MenuItemMetadata?
+public struct MenuItem: Identifiable, Equatable {
+  public var id = UUID()
+  public var title: String
+  public var type: MenuItemType
+  public var children: [MenuItem]
+  public var metadata: MenuItemMetadata?
   
-  init(
+  public init(
     title: String,
     type: MenuItemType,
     children: [MenuItem] = [],
@@ -35,15 +35,15 @@ struct MenuItem: Identifiable, Equatable {
 
 // MARK: - Menu Item Metadata
 
-struct MenuItemMetadata: Equatable {
-  var duration: TimeInterval?
-  var artist: String?
-  var album: String?
-  var artwork: String?
-  var trackNumber: Int?
-  var year: Int?
+public struct MenuItemMetadata: Equatable {
+  public var duration: TimeInterval?
+  public var artist: String?
+  public var album: String?
+  public var artwork: String?
+  public var trackNumber: Int?
+  public var year: Int?
   
-  init(
+  public init(
     duration: TimeInterval? = nil,
     artist: String? = nil,
     album: String? = nil,
@@ -62,7 +62,7 @@ struct MenuItemMetadata: Equatable {
 
 // MARK: - Extensions
 
-extension MenuItem {
+public extension MenuItem {
   var hasChildren: Bool {
     !children.isEmpty
   }
