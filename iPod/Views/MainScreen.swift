@@ -19,13 +19,11 @@ struct MainScreen: View {
       GeometryReader { proxy in
         let diameter = min(proxy.size.width, proxy.size.height)
         
-        WithPerceptionTracking {
-          ScrollWheelView(
-            diameter: diameter,
-            onButtonPress: { store.send(.wheelButtonPressed($0)) },
-            onScroll: { store.send(.wheelScrolled($0)) }
-          )
-        }
+        ScrollWheelView(
+          diameter: diameter,
+          onButtonPress: { ScrollWheelEventsPublisher.shared.send(.buttonPressed($0)) },
+          onScroll: { ScrollWheelEventsPublisher.shared.send(.scrolled($0)) }
+        )
       }
       .padding(.horizontal, 30)
     }

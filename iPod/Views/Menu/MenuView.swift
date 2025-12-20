@@ -7,78 +7,79 @@ struct MenuView: View {
   
   // MARK: - Properties
   
-  let store: StoreOf<MenuFeature>
+  let store: StoreOf<PodFeature>
+  @Binding var navigationPath: [UUID]
+  
+  // MARK: - Init
+  
+  init(store: StoreOf<PodFeature>, navigationPath: Binding<[UUID]>) {
+    self.store = store
+    self._navigationPath = navigationPath
+  }
   
   // MARK: - Body
   
   var body: some View {
-    
-    WithPerceptionTracking {
-      ZStack {
-        ForEach(store.navigationPath, id: \.id) { item in
-          MenuPageView(
-            items: item.children,
-            selectedIndex: store.selectedIndex
-          )
-          .transition(.slide)
+    ZStack {
+      ForEach(navigationPath.indices, id: \.self) { index in
+        let itemId = navigationPath[index]
+        let isActive = index == navigationPath.count - 1
+        
+        WithPerceptionTracking {
+          // Основной контент меню
+          if let children = store.menuTree.item(withId: itemId)?.children {
+            MenuPageView(
+              items: children,
+              isActive: isActive,
+              onSelect: { selectAndNavigate($0) }
+            )
+            .offset(x: isActive ? 0 : (index < navigationPath.count - 1 ? -300 : 300))
+            .opacity(isActive ? 1 : 0)
+            .transition(
+              .asymmetric(
+                insertion: .move(edge: .trailing),
+                removal: .slide
+              )
+            )
+          }
         }
       }
     }
+    .animation(.smooth(duration: 0.2), value: navigationPath.count)
+    .onReceive(ScrollWheelEventsPublisher.shared.events) { event in
+      // Отправляем действие в store
+      switch event {
+      case let .buttonPressed(button):
+        guard button == .menu else { return }
+        navigateBack()
+      default: break
+      }
+    }
+  }
+  
+  private func selectAndNavigate(_ selectedId: UUID) {
+    guard let selected = store.menuTree.item(withId: selectedId) else { return }
+    
+    if selected.hasChildren {
+      // Сохраняем текущий ID в историю
+      navigationPath.append(selected.id)
+      
+    } else if selected.isPlayable {
+      // Для треков и плейлистов - можно воспроизвести
+      print("Selected playable item: \(selected.title)")
+      // Здесь будет логика плеера
+    }
+  }
+  
+  private func navigateBack() {
+    guard navigationPath.count > 1 else { return }
+    
+    navigationPath.removeLast()
   }
 }
 
-// MARK: - MenuPageView
-
-struct MenuPageView: View {
-  
-  // MARK: - Properties
-  
-  let items: [MenuItem]
-  let selectedIndex: Int
-  let visibleCount: Int = 6
-  
-  @State private var startIndex: Int = 0
-  
-  // MARK: - Computed Properties
-  
-  private var endIndex: Int {
-    min(startIndex + visibleCount, items.count)
-  }
-  
-  private var currentPage: [MenuItem] {
-    Array(items[startIndex..<endIndex])
-  }
-  
-  // MARK: - Body
-  
-  var body: some View {
-    VStack(spacing: 0) {
-      ForEach(currentPage.indices, id: \.self) { i in
-        let globalIndex = startIndex + i
-        MenuItemView(
-          text: items[globalIndex].title,
-          isSelected: selectedIndex == globalIndex
-        )
-        .transition(.identity)
-      }
-    }
-    .onChange(of: selectedIndex) { newIndex in
-      handleScroll(for: newIndex)
-    }
-  }
-  
-  // MARK: - Private Methods
-  
-  private func handleScroll(for index: Int) {
-    guard items.count > visibleCount else { return }
-    
-    // Скролл вниз (если выбранный элемент уходит за нижний край)
-    if index >= endIndex {
-      startIndex = min(startIndex + 1, items.count - visibleCount)
-    }
-    // Скролл вверх (если выбранный элемент уходит за верхний край)
-    else if index < startIndex {
-      startIndex = max(startIndex - 1, 0)
-    }
-  }
+#Preview {
+  MainScreen(store: .init(initialState: PodFeature.State()) {
+    PodFeature()
+  })
 }

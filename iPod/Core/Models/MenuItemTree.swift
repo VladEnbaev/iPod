@@ -1,6 +1,6 @@
 import Foundation
 
-final class MenuItemTree {
+struct MenuItemTree: Equatable {
   
   // MARK: - Private Parameters
   
@@ -37,7 +37,7 @@ final class MenuItemTree {
     return index[parentId]
   }
   
-  func add(items: [MenuItem], toFolderId id: UUID?) {
+  mutating func add(items: [MenuItem], toFolderId id: UUID?) {
     if let id, var folder = index[id] {
       folder.children.append(contentsOf: items)
       for item in items {
@@ -57,7 +57,7 @@ final class MenuItemTree {
 
 private extension MenuItemTree {
   
-  private func buildIndex(from node: MenuItem, parentId: UUID? = nil) {
+  private mutating func buildIndex(from node: MenuItem, parentId: UUID? = nil) {
     index[node.id] = node
     if let parentId {
       parentIndex[node.id] = parentId

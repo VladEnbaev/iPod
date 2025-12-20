@@ -1,5 +1,7 @@
 import SwiftUI
 
+// MARK: - ScrollWheelView
+
 struct ScrollWheelView: View {
   
   // MARK: - Parameters
@@ -76,7 +78,7 @@ struct ScrollWheelView: View {
               .rotationEffect(.degrees(Double(index) * 90))
               .rotationEffect(.degrees(315))
           }
-            
+          
           Rectangle()
             .fill(borderColor)
             .frame(width: 1, height: (diameter - wheelDiameter) / 2)

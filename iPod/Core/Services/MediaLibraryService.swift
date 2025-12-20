@@ -53,3 +53,16 @@ final class MediaLibraryService {
     }
   }
 }
+
+// MARK: - Dependency
+
+extension DependencyValues {
+  var mediaLibraryService: MediaLibraryService {
+    get { self[MediaLibraryServiceKey.self] }
+    set { self[MediaLibraryServiceKey.self] = newValue }
+  }
+}
+
+private enum MediaLibraryServiceKey: DependencyKey {
+  static let liveValue: MediaLibraryService = .init()
+}

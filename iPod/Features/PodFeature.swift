@@ -10,92 +10,122 @@ struct PodFeature {
   
   @ObservableState
   struct State: Equatable {
-    var menu: MenuFeature.State
+    var menuTree: MenuItemTree
+    var isLoading: Bool = false
+    var errorMessage: String?
     
     init() {
       let rootItem = MenuItem(
         title: "iPod",
         type: .folder,
-        children: [
-          MenuItem(title: "Loading...", type: .folder, children: [])
-        ]
+        children: []
       )
-      self.menu = MenuFeature.State(rootItem: rootItem)
+      self.menuTree = .init(root: rootItem)
     }
   }
   
   // MARK: - Action
   
   enum Action: Equatable {
-    case menu(MenuFeature.Action)
+    // Menu
+    case initializeMenu
+    case mediaLibraryLoaded([MenuItem])
+    case mediaLibraryError(String)
+    
+    // Wheel
     case wheelButtonPressed(WheelButtonType)
     case wheelScrolled(WheelScrollDirection)
-    case initializeMenu
   }
-
+  
   // MARK: - Dependencies
-      
-  @Dependency(\.menuService) var menuService
+  
+  @Dependency(\.mediaLibraryService) var mediaLibraryService
   
   // MARK: - Reducer
   
   var body: some ReducerOf<Self> {
-    Scope(state: \.menu, action: \.menu) {
-      MenuFeature()
-    }
-    
     Reduce { state, action in
       switch action {
       case .initializeMenu:
-        // Инициализируем с реальным корневым элементом из сервиса
-        let root = menuService.root()
-        state.menu = MenuFeature.State(rootItem: root)
+        state.isLoading = true
+        state.errorMessage = nil
+        
+        // Создаем корневой элемент
+        let rootItem = MenuItem(
+          title: "iPod",
+          type: .folder,
+          children: [
+            MenuItem(title: "Playlists", type: .folder, children: []),
+            MenuItem(title: "Artists", type: .folder, children: []),
+            MenuItem(title: "Songs", type: .folder, children: []),
+            MenuItem(title: "Settings", type: .settings, children: [])
+          ]
+        )
+        state.menuTree = MenuItemTree(root: rootItem)
         
         // Начинаем загрузку медиатеки
-        return .send(.menu(.loadMediaLibrary))
+        return .run { send in
+          do {
+            let songs = try await mediaLibraryService.fetchSongs()
+            await send(.mediaLibraryLoaded(songs))
+          } catch {
+            await send(.mediaLibraryError(error.localizedDescription))
+          }
+        }
         
-      case .wheelButtonPressed(let button):
-        return handleWheelButton(button, state: &state)
+      case .mediaLibraryLoaded(let songs):
+        state.isLoading = false
+        populateMenuTree(with: songs, tree: &state.menuTree)
+        return .none
         
-      case .wheelScrolled(let direction):
-        return handleWheelScroll(direction, state: &state)
+      case .mediaLibraryError(let error):
+        state.isLoading = false
+        state.errorMessage = error
+        return .none
         
-      case .menu:
+      case .wheelButtonPressed(_):
+        return .none
+        
+      case .wheelScrolled(_):
         return .none
       }
     }
   }
   
-  // MARK: - Private Helpers
+  // MARK: - Private Methods
   
-  private func handleWheelButton(_ button: WheelButtonType, state: inout State) -> Effect<Action> {
-    switch button {
-    case .menu:
-      return .send(.menu(.navigateBack))
-      
-    case .center:
-      return .send(.menu(.selectAndNavigate))
-      
-    case .play:
-      // Для теста: если выбрали трек - выводим в консоль
-      if let selected = state.menu.selectedItem,
-         selected.type == .track {
-        print("Would play: \(selected.title)")
+  private func populateMenuTree(with songs: [MenuItem], tree: inout MenuItemTree) {
+    var playlists: [String: [MenuItem]] = [:]
+    var artists: [String: [MenuItem]] = [:]
+    
+    for song in songs {
+      if let playlistName = song.metadata?.album {
+        playlists[playlistName, default: []].append(song)
       }
-      return .none
-      
-    case .next, .previous:
-      // Пока не используется
-      return .none
+      if let artistName = song.metadata?.artist {
+        artists[artistName, default: []].append(song)
+      }
     }
-  }
-  
-  private func handleWheelScroll(_ direction: WheelScrollDirection, state: inout State) -> Effect<Action> {
-    switch direction {
-    case .left:
-      return .send(.menu(.scrollUp))
-    case .right:
-      return .send(.menu(.scrollDown))
+    
+    // Находим папки по названиям
+    let rootChildren = tree.children(of: nil)
+    
+    if let songsFolder = rootChildren.first(where: { $0.title == "Songs" }) {
+      tree.add(items: songs, toFolderId: songsFolder.id)
+    }
+    
+    if let playlistsFolder = rootChildren.first(where: { $0.title == "Playlists" }) {
+      let playlistItems = playlists.map { name, tracks in
+        MenuItem(title: name, type: .playlist, children: tracks)
+      }
+      tree.add(items: playlistItems, toFolderId: playlistsFolder.id)
+    }
+    
+    if let artistsFolder = rootChildren.first(where: { $0.title == "Artists" }) {
+      let artistItems = artists.map { name, tracks in
+        MenuItem(title: name, type: .artist, children: tracks)
+      }
+      tree.add(items: artistItems, toFolderId: artistsFolder.id)
     }
   }
 }
