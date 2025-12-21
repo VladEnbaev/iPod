@@ -32,7 +32,7 @@ struct DisplayHeaderView: View {
       
       Rectangle()
         .fill(Color.Pod.displayBlack)
-        .frame(height: 3)
+        .frame(height: 2)
     }
     .padding(.top, 4)
     .background(Color.Pod.displayWhite)

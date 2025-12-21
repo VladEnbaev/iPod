@@ -32,14 +32,22 @@ struct MenuPageView: View {
   // MARK: - Body
   
   var body: some View {
-    VStack(spacing: 0) {
-      // Список элементов
-      ForEach(0..<currentPage.count, id: \.self) { i in
-        let globalIndex = firstVisibleIndex + i
-        MenuItemView(
-          text: items[globalIndex].title,
-          isSelected: selectedIndex == globalIndex
-        )
+    HStack(spacing: .zero) {
+      VStack(spacing: .zero) {
+        // Список элементов
+        ForEach(0..<currentPage.count, id: \.self) { i in
+          let globalIndex = firstVisibleIndex + i
+          MenuItemView(
+            text: items[globalIndex].title,
+            isSelected: selectedIndex == globalIndex
+          )
+        }
+      }
+      .padding(.top, 4)
+      .padding(.horizontal, 1)
+      
+      if items.count > visibleCount {
+        scrollIndicator
       }
     }
     .frame(maxHeight: .infinity, alignment: .top)
@@ -57,7 +65,34 @@ struct MenuPageView: View {
     }
   }
   
-  // MARK: - Private Methods
+  // MARK: - Scroll Indicator
+  
+  private var scrollIndicator: some View {
+    Group {
+      let width: CGFloat = 18
+      
+      GeometryReader { geometry in
+        let height = geometry.size.height
+        let heightRatio = CGFloat(visibleCount) / CGFloat(items.count)
+        let offsetRatio = CGFloat(min(selectedIndex, items.count - visibleCount)) / CGFloat(items.count)
+        
+        Rectangle()
+          .fill(Color.Pod.displayBlack)
+          .clipShape(.rect(cornerRadius: 1))
+          .padding(3)
+          .frame(height: height * heightRatio)
+          .offset(y: height * offsetRatio)
+      }
+      .frame(width: width, alignment: .center)
+      .background(Color.Pod.displayWhite)
+      .border(Color.Pod.displayBlack, width: 2)
+    }
+  }
+}
+
+// MARK: - Private Methods
+
+private extension MenuPageView {
   
   private func handleScroll(for direction: WheelScrollDirection) {
     // Если прокрутили колесо назад, но выбранный индекс первый - выходим

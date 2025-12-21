@@ -56,6 +56,11 @@ struct MenuView: View {
       }
     }
   }
+}
+  
+// MARK: - Private Methods
+
+private extension MenuView {
   
   private func selectAndNavigate(_ selectedId: UUID) {
     guard let selected = store.menuTree.item(withId: selectedId) else { return }

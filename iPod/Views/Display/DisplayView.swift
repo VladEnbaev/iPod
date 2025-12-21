@@ -25,7 +25,7 @@ struct DisplayView: View {
   
   var body: some View {
     WithPerceptionTracking {
-      VStack(spacing: 2) {
+      VStack(spacing: .zero) {
         WithPerceptionTracking {
           DisplayHeaderView(
             title: store.menuTree.item(
@@ -34,6 +34,8 @@ struct DisplayView: View {
             status: .playing
           )
         }
+        .offset(y: 2)
+        .zIndex(1)
         
         WithPerceptionTracking {
           MenuView(
@@ -41,8 +43,10 @@ struct DisplayView: View {
             navigationPath: $menuNavigationPath
           )
         }
+        .zIndex(0)
       }
       .frame(maxHeight: .infinity, alignment: .top)
+      .padding(6)
       .overlay {
         let shadowRadius: CGFloat = 2
         RoundedRectangle(cornerRadius: cornerRadius)

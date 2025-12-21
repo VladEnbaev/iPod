@@ -11,7 +11,7 @@ struct MainScreen: View {
       
       WithPerceptionTracking {
         DisplayView(store: store)
-          .frame(height: 220)
+          .frame(width: 300, height: 230)
           .padding(.horizontal, 50)
           .padding(.bottom, 40)
       }
