@@ -1,6 +1,7 @@
 # iPod 1st gen Clone (iOS)
 
 A faithful recreation of the iconic iPod Classic first-generation interface built with modern iOS technologies.
+WIP
 
 ![iOS](https://img.shields.io/badge/iOS-15+-blue.svg)
 ![TCA](https://img.shields.io/badge/Architecture-TCA-purple.svg)
