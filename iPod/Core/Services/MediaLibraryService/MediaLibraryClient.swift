@@ -1,4 +1,3 @@
-import ComposableArchitecture
 import MediaPlayer
 
 // MARK: - MediaLibraryError
@@ -7,9 +6,15 @@ enum MediaLibraryError: Error {
   case requestDenied
 }
 
-// MARK: - MediaLibraryService
+// MARK: - Media Library Client
 
-final class MediaLibraryService {
+protocol MediaLibraryClient {
+  func fetchSongs() async throws(MediaLibraryError) -> [MenuItem]
+}
+
+// MARK: - Live Media Library Implementation
+
+final class LiveMediaLibraryClient: MediaLibraryClient {
   
   // MARK: - Init
   
@@ -25,19 +30,21 @@ final class MediaLibraryService {
     let query = MPMediaQuery.songs()
     let items = query.items ?? []
     
-    return items.map { item in
-      MenuItem(
+    return items.compactMap { item in
+      guard let url = item.assetURL else { return nil }
+      return MenuItem(
         title: item.title ?? "Unknown",
         type: .track,
-        metadata: MenuItemMetadata(
+        metadata: TrackInfo(
           duration: item.playbackDuration,
           artist: item.artist,
           album: item.albumTitle,
           artwork: item.artwork?.image(at: CGSize(width: 100, height: 100))?.accessibilityIdentifier,
-          trackNumber: item.albumTrackNumber,
+          trackNumber: item.albumTrackNumber > 0 ? item.albumTrackNumber : nil,
           year: item.releaseDate.flatMap {
             Calendar.current.dateComponents([.year], from: $0).year
-          }
+          },
+          fileURL: url
         )
       )
     }
@@ -52,17 +59,4 @@ final class MediaLibraryService {
       }
     }
   }
-}
-
-// MARK: - Dependency
-
-extension DependencyValues {
-  var mediaLibraryService: MediaLibraryService {
-    get { self[MediaLibraryServiceKey.self] }
-    set { self[MediaLibraryServiceKey.self] = newValue }
-  }
-}
-
-private enum MediaLibraryServiceKey: DependencyKey {
-  static let liveValue: MediaLibraryService = .init()
 }

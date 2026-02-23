@@ -11,6 +11,7 @@ struct PodFeature {
   @ObservableState
   struct State: Equatable {
     var menuTree: MenuItemTree
+    var player: PlayerFeature.State
     var isLoading: Bool = false
     var errorMessage: String?
     
@@ -21,6 +22,7 @@ struct PodFeature {
         children: []
       )
       self.menuTree = .init(root: rootItem)
+      self.player = .init()
     }
   }
   
@@ -31,15 +33,19 @@ struct PodFeature {
     case initializeMenu
     case mediaLibraryLoaded([MenuItem])
     case mediaLibraryError(String)
+    case menuItemSelected(UUID)
     
     // Wheel
     case wheelButtonPressed(WheelButtonType)
     case wheelScrolled(WheelScrollDirection)
+
+    // Player
+    case player(PlayerFeature.Action)
   }
   
   // MARK: - Dependencies
   
-  @Dependency(\.mediaLibraryService) var mediaLibraryService
+  @Dependency(\.mediaLibrary) var mediaLibraryService
   
   // MARK: - Reducer
   
@@ -82,13 +88,40 @@ struct PodFeature {
         state.isLoading = false
         state.errorMessage = error
         return .none
+
+      case .menuItemSelected(let id):
+        guard let selected = state.menuTree.item(withId: id) else { return .none }
+        guard selected.isPlayable else { return .none }
+
+        let queue: [MenuItem]
+        switch selected.type {
+        case .playlist:
+          queue = selected.children
+        case .track:
+          if let parent = state.menuTree.parent(of: selected.id) {
+            queue = parent.children
+          } else {
+            queue = [selected]
+          }
+        default:
+          queue = [selected]
+        }
+
+        return .send(.player(.playTrack(selected, queue: queue)))
         
       case .wheelButtonPressed(_):
         return .none
         
       case .wheelScrolled(_):
         return .none
+
+      case .player:
+        return .none
       }
+    }
+    
+    Scope(state: \.player, action: \.player) {
+      PlayerFeature()
     }
   }
   

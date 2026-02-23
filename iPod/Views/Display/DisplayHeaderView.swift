@@ -20,14 +20,15 @@ struct DisplayHeaderView: View {
       HStack(spacing: .zero) {
         trackStatusView
         Spacer()
+        // TODO: - battery
       }
       .overlay {
         Text(title)
           .font(.chicagoRegular())
           .foregroundColor(.Pod.displayBlack)
-          .padding(.horizontal, 20)
+          .padding(.horizontal, 32)
       }
-      .padding(.horizontal, 16)
+      .padding(.horizontal, 12)
       .frame(height: 30)
       
       Rectangle()
@@ -47,7 +48,7 @@ struct DisplayHeaderView: View {
           .foregroundColor(.Pod.displayBlack)
       }
     }
-    .frame(width: 20, height: 20)
+    .frame(width: 24, height: 24)
   }
 }
 
