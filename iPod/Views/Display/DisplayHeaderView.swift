@@ -20,7 +20,7 @@ struct DisplayHeaderView: View {
       HStack(spacing: .zero) {
         trackStatusView
         Spacer()
-        // TODO: - battery
+        BatteryView()
       }
       .overlay {
         Text(title)
