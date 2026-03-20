@@ -1,4 +1,5 @@
 import MediaPlayer
+import UIKit
 
 // MARK: - MediaLibraryError
 
@@ -32,6 +33,9 @@ final class LiveMediaLibraryClient: MediaLibraryClient {
     
     return items.compactMap { item in
       guard let url = item.assetURL else { return nil }
+      let artworkImage = item.artwork?.image(at: CGSize(width: 512, height: 512))
+      let artworkData = artworkImage?.pngData() ?? artworkImage?.jpegData(compressionQuality: 0.9)
+
       return MenuItem(
         title: item.title ?? "Unknown",
         type: .track,
@@ -39,7 +43,7 @@ final class LiveMediaLibraryClient: MediaLibraryClient {
           duration: item.playbackDuration,
           artist: item.artist,
           album: item.albumTitle,
-          artwork: item.artwork?.image(at: CGSize(width: 100, height: 100))?.accessibilityIdentifier,
+          artwork: artworkData,
           trackNumber: item.albumTrackNumber > 0 ? item.albumTrackNumber : nil,
           year: item.releaseDate.flatMap {
             Calendar.current.dateComponents([.year], from: $0).year

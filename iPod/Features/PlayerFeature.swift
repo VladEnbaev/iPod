@@ -143,6 +143,7 @@ struct PlayerFeature {
           .send(.startObserving),
           .send(._setupAudioSession),
           .send(._setupRemoteCommands),
+          .send(._updateNowPlayingInfo),
           .run { [track, volume = state.volume] send in
             // NOTE: adapt these calls to your AudioPlayerClient.
             // The important part is: load -> volume -> play.
@@ -182,9 +183,12 @@ struct PlayerFeature {
         let clamped = min(max(0, time), state.duration > 0 ? state.duration : time)
         state.currentTime = clamped
 
-        return .run { [time = clamped] _ in
-          await audioPlayer.seek(to: time)
-        }
+        return .merge(
+          .send(._updateNowPlayingInfo),
+          .run { [time = clamped] _ in
+            await audioPlayer.seek(to: time)
+          }
+        )
 
       // MARK: Player events observing
 
@@ -206,11 +210,11 @@ struct PlayerFeature {
         switch event {
         case let .time(t):
           state.currentTime = t
-          return .none
+          return .send(._updateNowPlayingInfo)
 
         case let .duration(d):
           state.duration = d
-          return .none
+          return .send(._updateNowPlayingInfo)
 
         case let .playing(isPlaying):
           state.isPlaying = isPlaying
@@ -218,6 +222,22 @@ struct PlayerFeature {
 
         case .ended:
           return .send(.trackEnded)
+
+        case let .remoteCommand(command):
+          switch command {
+          case .play:
+            return .send(.play)
+          case .pause:
+            return .send(.pause)
+          case .togglePlayPause:
+            return .send(.togglePlayPause)
+          case .nextTrack:
+            return .send(.nextTrack)
+          case .previousTrack:
+            return .send(.previousTrack)
+          case let .seek(time):
+            return .send(.seekToTime(time))
+          }
 
         case let .error(message):
           // You can surface it in UI later.
@@ -229,7 +249,7 @@ struct PlayerFeature {
 
       case let .updateCurrentTime(time):
         state.currentTime = min(max(0, time), state.duration > 0 ? state.duration : time)
-        return .none
+        return .send(._updateNowPlayingInfo)
 
       case .trackEnded:
         switch state.repeatMode {
@@ -316,12 +336,25 @@ struct PlayerFeature {
         }
 
       case ._setupRemoteCommands:
-        // TODO: MPRemoteCommandCenter bindings (play/pause/next/prev/seek)
-        return .none
+        return .run { _ in
+          await audioPlayer.setupRemoteCommands()
+        }
 
       case ._updateNowPlayingInfo:
-        // TODO: MPNowPlayingInfoCenter update (title/artist/elapsed/duration/artwork)
-        return .none
+        return .run {
+          [
+            track = state.currentTrack,
+            currentTime = state.currentTime,
+            duration = state.duration,
+            isPlaying = state.isPlaying
+          ] _ in
+          await audioPlayer.updateNowPlayingInfo(
+            track: track,
+            currentTime: currentTime,
+            duration: duration,
+            isPlaying: isPlaying
+          )
+        }
       }
     }
   }

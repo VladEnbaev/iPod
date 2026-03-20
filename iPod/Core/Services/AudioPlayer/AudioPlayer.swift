@@ -1,7 +1,17 @@
 import AVFoundation
 import MediaPlayer
+import UIKit
 
 // MARK: - Audio Player Events
+
+enum AudioPlayerRemoteCommand: Equatable {
+  case play
+  case pause
+  case togglePlayPause
+  case nextTrack
+  case previousTrack
+  case seek(TimeInterval)
+}
 
 enum AudioPlayerEvent: Equatable {
   /// Current time changed (seconds).
@@ -12,6 +22,8 @@ enum AudioPlayerEvent: Equatable {
   case playing(Bool)
   /// Current item finished playing.
   case ended
+  /// Remote command from Control Center / lock screen.
+  case remoteCommand(AudioPlayerRemoteCommand)
   /// Non-fatal error description.
   case error(String)
 }
@@ -31,6 +43,13 @@ protocol AudioPlayer {
 
   // Session
   func setupAudioSession() async throws
+  func setupRemoteCommands() async
+  func updateNowPlayingInfo(
+    track: MenuItem?,
+    currentTime: TimeInterval,
+    duration: TimeInterval,
+    isPlaying: Bool
+  ) async
 }
 
 // MARK: - Live Audio Player Implementation
@@ -42,6 +61,8 @@ final class LiveAudioPlayer: AudioPlayer {
   private var player: AVPlayer?
   private var playerItem: AVPlayerItem?
   private var timeObserver: Any?
+  private var remoteCommandsConfigured: Bool = false
+  private var remoteCommandBindings: [(command: MPRemoteCommand, token: Any)] = []
 
   private let eventStream: AsyncStream<AudioPlayerEvent>
   private var continuation: AsyncStream<AudioPlayerEvent>.Continuation?
@@ -63,6 +84,7 @@ final class LiveAudioPlayer: AudioPlayer {
     if let timeObserver = timeObserver {
       player?.removeTimeObserver(timeObserver)
     }
+    cleanupRemoteCommands()
     NotificationCenter.default.removeObserver(self)
   }
   
@@ -196,9 +218,137 @@ final class LiveAudioPlayer: AudioPlayer {
       try audioSession.setCategory(
         .playback,
         mode: .default,
-        options: [.allowAirPlay, .allowBluetooth, .mixWithOthers]
+        options: [.allowAirPlay, .allowBluetoothHFP, .mixWithOthers]
       )
       try audioSession.setActive(true)
+    }
+  }
+
+  func setupRemoteCommands() async {
+    await MainActor.run {
+      guard !remoteCommandsConfigured else { return }
+
+      let center = MPRemoteCommandCenter.shared()
+      center.playCommand.isEnabled = true
+      center.pauseCommand.isEnabled = true
+      center.togglePlayPauseCommand.isEnabled = true
+      center.nextTrackCommand.isEnabled = true
+      center.previousTrackCommand.isEnabled = true
+      center.changePlaybackPositionCommand.isEnabled = true
+
+      let playToken = center.playCommand.addTarget { [weak self] _ in
+        self?.emit(.remoteCommand(.play))
+        return .success
+      }
+      let pauseToken = center.pauseCommand.addTarget { [weak self] _ in
+        self?.emit(.remoteCommand(.pause))
+        return .success
+      }
+      let toggleToken = center.togglePlayPauseCommand.addTarget { [weak self] _ in
+        self?.emit(.remoteCommand(.togglePlayPause))
+        return .success
+      }
+      let nextToken = center.nextTrackCommand.addTarget { [weak self] _ in
+        self?.emit(.remoteCommand(.nextTrack))
+        return .success
+      }
+      let previousToken = center.previousTrackCommand.addTarget { [weak self] _ in
+        self?.emit(.remoteCommand(.previousTrack))
+        return .success
+      }
+      let seekToken = center.changePlaybackPositionCommand.addTarget { [weak self] event in
+        guard let event = event as? MPChangePlaybackPositionCommandEvent else {
+          return .commandFailed
+        }
+        self?.emit(.remoteCommand(.seek(event.positionTime)))
+        return .success
+      }
+
+      remoteCommandBindings = [
+        (center.playCommand, playToken),
+        (center.pauseCommand, pauseToken),
+        (center.togglePlayPauseCommand, toggleToken),
+        (center.nextTrackCommand, nextToken),
+        (center.previousTrackCommand, previousToken),
+        (center.changePlaybackPositionCommand, seekToken)
+      ]
+      remoteCommandsConfigured = true
+    }
+  }
+
+  func updateNowPlayingInfo(
+    track: MenuItem?,
+    currentTime: TimeInterval,
+    duration: TimeInterval,
+    isPlaying: Bool
+  ) async {
+    await MainActor.run {
+      guard let track else {
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        return
+      }
+
+      var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
+      nowPlayingInfo[MPMediaItemPropertyTitle] = track.title
+
+      if let artist = track.metadata?.artist {
+        nowPlayingInfo[MPMediaItemPropertyArtist] = artist
+      } else {
+        nowPlayingInfo.removeValue(forKey: MPMediaItemPropertyArtist)
+      }
+
+      if let album = track.metadata?.album {
+        nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = album
+      } else {
+        nowPlayingInfo.removeValue(forKey: MPMediaItemPropertyAlbumTitle)
+      }
+
+      if let artwork = nowPlayingArtwork(from: track.metadata?.artwork) {
+        nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
+      } else {
+        nowPlayingInfo.removeValue(forKey: MPMediaItemPropertyArtwork)
+      }
+
+      let resolvedDuration = duration > 0 ? duration : (track.metadata?.duration ?? 0)
+      if resolvedDuration > 0 {
+        nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = resolvedDuration
+      } else {
+        nowPlayingInfo.removeValue(forKey: MPMediaItemPropertyPlaybackDuration)
+      }
+
+      nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = max(0, currentTime)
+      nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? 1.0 : 0.0
+      nowPlayingInfo[MPNowPlayingInfoPropertyDefaultPlaybackRate] = 1.0
+      MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+    }
+  }
+
+  private func nowPlayingArtwork(from data: Data?) -> MPMediaItemArtwork? {
+    guard let data, let image = UIImage(data: data) else { return nil }
+
+    return MPMediaItemArtwork(boundsSize: image.size) { _ in
+      image
+    }
+  }
+
+  private func cleanupRemoteCommands() {
+    let cleanup = {
+      guard self.remoteCommandsConfigured else { return }
+
+      self.remoteCommandBindings.forEach { binding in
+        binding.command.removeTarget(binding.token)
+      }
+      self.remoteCommandBindings.removeAll()
+      self.remoteCommandsConfigured = false
+      MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+    }
+
+    if Thread.isMainThread {
+      cleanup()
+    } else {
+      DispatchQueue.main.sync {
+        cleanup()
+      }
     }
   }
 }

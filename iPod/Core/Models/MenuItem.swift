@@ -39,7 +39,7 @@ public struct TrackInfo: Equatable {
   public let duration: TimeInterval
   public let artist: String?
   public let album: String?
-  public let artwork: String?
+  public let artwork: Data?
   public let trackNumber: Int?
   public let year: Int?
   public let fileURL: URL
@@ -48,7 +48,7 @@ public struct TrackInfo: Equatable {
     duration: TimeInterval,
     artist: String? = nil,
     album: String? = nil,
-    artwork: String? = nil,
+    artwork: Data? = nil,
     trackNumber: Int? = nil,
     year: Int? = nil,
     fileURL: URL
