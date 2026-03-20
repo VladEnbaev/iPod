@@ -9,7 +9,6 @@ struct MenuView: View {
   
   let store: StoreOf<PodFeature>
   @Binding var navigationPath: [UUID]
-  @State private var isShowingPlayer: Bool = false
   
   // MARK: - Init
   
@@ -45,15 +44,18 @@ struct MenuView: View {
       
       let itemId = navigationPath[index]
       let isActive = index == navigationPath.count - 1
-      let item = store.menuTree.item(withId: itemId)
       
       Group {
-        if item?.isPlayable ?? false {
+        if itemId == PodFeature.nowPlayingMenuID {
+          PlayerView(
+            store: store.scope(state: \.player, action: \.player)
+          )
+        } else if let item = store.menuTree.item(withId: itemId), item.isPlayable {
           PlayerView(
             store: store.scope(state: \.player, action: \.player)
           )
           
-        } else if let children = item?.children {
+        } else if let children = items(for: itemId) {
           MenuPageView(
             items: children,
             isActive: isActive,
@@ -76,8 +78,31 @@ struct MenuView: View {
 // MARK: - Private Methods
 
 private extension MenuView {
+  private func items(for itemId: UUID) -> [MenuItem]? {
+    guard let item = store.menuTree.item(withId: itemId) else { return nil }
+
+    var items = item.children
+
+    if item.id == store.menuTree.rootItem().id, store.player.currentTrack != nil {
+      items.append(
+        MenuItem(
+          id: PodFeature.nowPlayingMenuID,
+          title: "Now Playing",
+          type: .folder,
+          children: []
+        )
+      )
+    }
+
+    return items
+  }
   
   private func selectAndNavigate(_ selectedId: UUID) {
+    if selectedId == PodFeature.nowPlayingMenuID {
+      navigationPath.append(selectedId)
+      return
+    }
+
     guard let selected = store.menuTree.item(withId: selectedId) else { return }
     navigationPath.append(selectedId)
     

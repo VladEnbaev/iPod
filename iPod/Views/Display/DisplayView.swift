@@ -76,6 +76,10 @@ struct DisplayView: View {
 private extension DisplayView {
   
   func title(for id: UUID) -> String {
+    if id == PodFeature.nowPlayingMenuID {
+      return "Now Playing"
+    }
+
     let item = store.menuTree.item(withId: id)
     
     if item?.isPlayable == true {

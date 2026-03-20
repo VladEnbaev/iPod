@@ -21,11 +21,13 @@ public struct MenuItem: Identifiable, Equatable {
   public var metadata: TrackInfo?
   
   public init(
+    id: UUID = UUID(),
     title: String,
     type: MenuItemType,
     children: [MenuItem] = [],
     metadata: TrackInfo? = nil
   ) {
+    self.id = id
     self.title = title
     self.type = type
     self.children = children

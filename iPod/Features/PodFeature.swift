@@ -5,6 +5,7 @@ import Foundation
 
 @Reducer
 struct PodFeature {
+  static let nowPlayingMenuID = UUID(uuidString: "3A12FB2D-E6B3-4D4A-92EB-3B4F5F0F1A4F")!
   
   // MARK: - State
   
