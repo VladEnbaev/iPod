@@ -18,14 +18,16 @@ public struct MenuItem: Identifiable, Equatable {
   public var title: String
   public var type: MenuItemType
   public var children: [MenuItem]
-  public var metadata: MenuItemMetadata?
+  public var metadata: TrackInfo?
   
   public init(
+    id: UUID = UUID(),
     title: String,
     type: MenuItemType,
     children: [MenuItem] = [],
-    metadata: MenuItemMetadata? = nil
+    metadata: TrackInfo? = nil
   ) {
+    self.id = id
     self.title = title
     self.type = type
     self.children = children
@@ -33,23 +35,25 @@ public struct MenuItem: Identifiable, Equatable {
   }
 }
 
-// MARK: - Menu Item Metadata
+// MARK: - Track Info
 
-public struct MenuItemMetadata: Equatable {
-  public var duration: TimeInterval?
-  public var artist: String?
-  public var album: String?
-  public var artwork: String?
-  public var trackNumber: Int?
-  public var year: Int?
+public struct TrackInfo: Equatable {
+  public let duration: TimeInterval
+  public let artist: String?
+  public let album: String?
+  public let artwork: Data?
+  public let trackNumber: Int?
+  public let year: Int?
+  public let fileURL: URL
   
   public init(
-    duration: TimeInterval? = nil,
+    duration: TimeInterval,
     artist: String? = nil,
     album: String? = nil,
-    artwork: String? = nil,
+    artwork: Data? = nil,
     trackNumber: Int? = nil,
-    year: Int? = nil
+    year: Int? = nil,
+    fileURL: URL
   ) {
     self.duration = duration
     self.artist = artist
@@ -57,6 +61,7 @@ public struct MenuItemMetadata: Equatable {
     self.artwork = artwork
     self.trackNumber = trackNumber
     self.year = year
+    self.fileURL = fileURL
   }
 }
 
@@ -68,7 +73,7 @@ public extension MenuItem {
   }
   
   var isPlayable: Bool {
-    type == .track || type == .playlist
+    type == .track
   }
   
   var displayTitle: String {

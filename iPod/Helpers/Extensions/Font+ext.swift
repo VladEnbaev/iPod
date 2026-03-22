@@ -9,5 +9,5 @@ extension Font {
 }
 
 extension CGFloat {
-  public static let commonFontSize: CGFloat = 22
+  public static let commonFontSize: CGFloat = 24
 }

@@ -28,10 +28,8 @@ struct DisplayView: View {
       VStack(spacing: .zero) {
         WithPerceptionTracking {
           DisplayHeaderView(
-            title: store.menuTree.item(
-              withId: menuNavigationPath.last ?? UUID()
-            )?.title ?? store.menuTree.rootItem().title,
-            status: .playing
+            title: title(for: menuNavigationPath.last ?? UUID()),
+            status: store.player.isPlaying ? .playing : .paused
           )
         }
         .offset(y: 2)
@@ -70,6 +68,25 @@ struct DisplayView: View {
         menuNavigationPath[0] = item.id
       }
     }
+  }
+}
+
+// MARK: - Methods
+
+private extension DisplayView {
+  
+  func title(for id: UUID) -> String {
+    if id == PodFeature.nowPlayingMenuID {
+      return "Now Playing"
+    }
+
+    let item = store.menuTree.item(withId: id)
+    
+    if item?.isPlayable == true {
+      return "Now Playing"
+    }
+    
+    return item?.title ?? store.menuTree.rootItem().title
   }
 }
 

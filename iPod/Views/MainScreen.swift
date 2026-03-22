@@ -50,6 +50,23 @@ struct MainScreen: View {
     .onAppear {
       store.send(.initializeMenu)
     }
+    .onReceive(ScrollWheelEventsPublisher.shared.events) { event in
+      // iPod-like behavior: MENU closes the player screen.
+      switch event {
+      case let .buttonPressed(button):
+        switch button {
+        case .next:
+          store.send(.player(.nextTrack))
+        case .previous:
+          store.send(.player(.previousTrack))
+        case .play:
+          store.send(.player(.togglePlayPause))
+        default: break
+        }
+      default:
+        break
+      }
+    }
   }
 }
 
