@@ -27,14 +27,11 @@ struct DisplayView: View {
   var body: some View {
     WithPerceptionTracking {
       displayContent
-      .background(Color.Pod.displayWhite)
-      .clipShape(.rect(cornerRadius: cornerRadius))
-      .overlay {
-        displayBorder
-      }
-      .onChange(of: store.menuTree.rootItem().id) { rootID in
-        menuNavigationPath[0] = rootID
-      }
+        .background(Color.Pod.displayWhite)
+        .clipShape(.rect(cornerRadius: cornerRadius))
+        .onChange(of: store.menuTree.rootItem().id) { rootID in
+          menuNavigationPath[0] = rootID
+        }
     }
     .onChange(of: scenePhase) { newPhase in
       guard newPhase == .active else { return }
@@ -60,18 +57,22 @@ private extension DisplayView {
     }
     .frame(maxHeight: .infinity, alignment: .top)
     .padding(6)
+    .frame(maxHeight: .infinity, alignment: .top)
+    .overlay {
+      innerShadow
+    }
   }
-
+  
   var headerView: some View {
     DisplayHeaderView(
       title: title(for: menuNavigationPath.last ?? UUID()),
       status: store.player.isPlaying ? .playing : .paused
     )
   }
-
+  
   var displayBorder: some View {
     let shadowRadius: CGFloat = 2
-
+    
     return RoundedRectangle(cornerRadius: cornerRadius)
       .stroke(Color.black.opacity(0.2), lineWidth: 4)
       .shadow(
@@ -88,11 +89,30 @@ private extension DisplayView {
       )
   }
   
+  private var innerShadow: some View {
+    let shadowRadius: CGFloat = 2
+    let shadowColor = Color.black.opacity(0.7)
+    return RoundedRectangle(cornerRadius: cornerRadius)
+      .stroke(Color.black.opacity(0.2), lineWidth: 4)
+      .shadow(
+        color: shadowColor, radius: shadowRadius, x: shadowRadius, y: shadowRadius
+      )
+      .clipShape(
+        RoundedRectangle(cornerRadius: cornerRadius)
+      )
+      .shadow(
+        color: shadowColor, radius: shadowRadius, x: -shadowRadius, y: -shadowRadius
+      )
+      .clipShape(
+        RoundedRectangle(cornerRadius: cornerRadius)
+      )
+  }
+  
   func title(for id: UUID) -> String {
     if id == PodFeature.nowPlayingMenuID {
       return "Now Playing"
     }
-
+    
     let item = store.menuTree.item(withId: id)
     
     if item?.isPlayable == true {
@@ -101,19 +121,19 @@ private extension DisplayView {
     
     return item?.title ?? store.menuTree.rootItem().title
   }
-
+  
   func openNowPlayingIfNeeded() {
     guard store.player.currentTrack != nil else { return }
     guard let currentScreenID = menuNavigationPath.last else { return }
-
+    
     if currentScreenID == PodFeature.nowPlayingMenuID {
       return
     }
-
+    
     if store.menuTree.item(withId: currentScreenID)?.isPlayable == true {
       return
     }
-
+    
     menuNavigationPath.removeAll { $0 == PodFeature.nowPlayingMenuID }
     menuNavigationPath.append(PodFeature.nowPlayingMenuID)
   }

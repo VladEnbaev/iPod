@@ -32,7 +32,6 @@ struct MenuItemView: View {
         .foregroundColor(foregroundColor)
     }
     .padding(.horizontal, 6)
-    .padding(.vertical, 5)
     .frame(height: 30)
     .background(backgroundColor)
     .clipShape(.rect(cornerRadius: 1))

@@ -6,28 +6,22 @@ struct MainScreen: View {
   let store: StoreOf<PodFeature>
   
   var body: some View {
-    VStack(alignment: .center) {
-      Spacer()
-      
+    VStack(alignment: .center, spacing: .zero) {
       WithPerceptionTracking {
         DisplayView(store: store)
           .frame(width: 300, height: 230)
-          .padding(.horizontal, 50)
-          .padding(.bottom, 40)
+          .padding(.bottom, 30)
+          .padding(.top, 30)
       }
       
-      GeometryReader { proxy in
-        let diameter = min(proxy.size.width, proxy.size.height)
-        
-        ScrollWheelView(
-          diameter: diameter,
-          onButtonPress: { ScrollWheelEventsPublisher.shared.send(.buttonPressed($0)) },
-          onScroll: { ScrollWheelEventsPublisher.shared.send(.scrolled($0)) }
-        )
-      }
-      .padding(.horizontal, 30)
+      ScrollWheelView(
+        diameter: 320,
+        onButtonPress: { ScrollWheelEventsPublisher.shared.send(.buttonPressed($0)) },
+        onScroll: { ScrollWheelEventsPublisher.shared.send(.scrolled($0)) }
+      )
+      .padding(.bottom, 30)
     }
-    .padding(.vertical, 50)
+    .frame(maxWidth: .infinity)
     .background(Color.Pod.caseColor, ignoresSafeAreaEdges: [])
     .overlay {
       RoundedRectangle(cornerRadius: 35)

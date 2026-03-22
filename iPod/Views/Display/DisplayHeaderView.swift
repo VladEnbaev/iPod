@@ -26,7 +26,7 @@ struct DisplayHeaderView: View {
         Text(title)
           .font(.chicagoRegular())
           .foregroundColor(.Pod.displayBlack)
-          .padding(.horizontal, 32)
+          .padding(.horizontal, 44)
       }
       .padding(.horizontal, 12)
       .frame(height: 30)
@@ -35,7 +35,6 @@ struct DisplayHeaderView: View {
         .fill(Color.Pod.displayBlack)
         .frame(height: 2)
     }
-    .padding(.top, 4)
     .background(Color.Pod.displayWhite)
   }
   
