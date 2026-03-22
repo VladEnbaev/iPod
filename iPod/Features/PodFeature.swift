@@ -132,7 +132,7 @@ struct PodFeature {
     let rootChildren = tree.children(of: nil)
     
     if let songsFolder = rootChildren.first(where: { $0.title == "Songs" }) {
-      tree.add(items: makeTrackCopies(from: songs), toFolderId: songsFolder.id)
+      tree.add(items: makeTrackCopies(from: sortLibrarySongs(songs)), toFolderId: songsFolder.id)
     }
     
     if let playlistsFolder = rootChildren.first(where: { $0.title == "Playlists" }) {
@@ -209,6 +209,24 @@ struct PodFeature {
     }
   }
 
+  private func sortLibrarySongs(_ songs: [MenuItem]) -> [MenuItem] {
+    groupedLibraryAlbums(from: songs)
+      .flatMap(\.tracks)
+  }
+
+  private func groupedLibraryAlbums(from songs: [MenuItem]) -> [LibraryAlbumGroup] {
+    Dictionary(grouping: songs, by: albumLibraryKey(for:))
+      .map { key, tracks in
+        LibraryAlbumGroup(
+          artist: key.artist,
+          title: key.title,
+          year: key.year,
+          tracks: sortTracksWithinAlbum(tracks)
+        )
+      }
+      .sorted(by: compareLibraryAlbumGroups)
+  }
+
   private func sortTracksWithinAlbum(_ songs: [MenuItem]) -> [MenuItem] {
     songs.sorted { lhs, rhs in
       compareOptionalInts(lhs.metadata?.discNumber, rhs.metadata?.discNumber)
@@ -260,6 +278,13 @@ struct PodFeature {
     ?? false
   }
 
+  private func compareLibraryAlbumGroups(_ lhs: LibraryAlbumGroup, _ rhs: LibraryAlbumGroup) -> Bool {
+    compareStrings(lhs.artist, rhs.artist)
+    ?? compareOptionalInts(lhs.year, rhs.year)
+    ?? compareStrings(lhs.title, rhs.title)
+    ?? false
+  }
+
   private func compareOptionalInts(_ lhs: Int?, _ rhs: Int?) -> Bool? {
     switch (lhs, rhs) {
     case let (lhs?, rhs?) where lhs != rhs:
@@ -300,6 +325,13 @@ private extension PodFeature {
   }
 
   struct AlbumGroup {
+    let title: String
+    let year: Int?
+    let tracks: [MenuItem]
+  }
+
+  struct LibraryAlbumGroup {
+    let artist: String
     let title: String
     let year: Int?
     let tracks: [MenuItem]

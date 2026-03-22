@@ -103,6 +103,7 @@ private extension DisplayView {
   }
 
   func openNowPlayingIfNeeded() {
+    guard store.player.isPlaying else { return }
     guard store.player.currentTrack != nil else { return }
     guard let currentScreenID = menuNavigationPath.last else { return }
 
