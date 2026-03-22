@@ -27,7 +27,7 @@ struct PlayerVolumeView: View {
 
       GeometryReader { geo in
         let innerHeight = max(0, barHeight)
-        let innerWidth = max(0, geo.size.width - barLineWidth * 2)
+        let innerWidth = max(0, geo.size.width)
         let fillWidth = innerWidth * clampedVolume
 
         ZStack(alignment: .leading) {
@@ -53,13 +53,11 @@ struct PlayerVolumeView: View {
         .frame(width: 30, height: 30)
         .foregroundStyle(Color.Pod.displayBlack)
     }
-    .padding(.horizontal, 6)
-    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
   }
 }
 
 #Preview {
-  PlayerVolumeView(volume: 0.7)
+  PlayerVolumeView(volume: 1)
     .frame(width: 260, height: 80)
     .padding()
     .background(Color.Pod.displayWhite)

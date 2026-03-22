@@ -7,7 +7,7 @@ struct PlayerProgressView: View {
   // MARK: - Properties
 
   let progress: Double
-  let timeElapsed: String
+//  let timeElapsed: String
   let timeRemaining: String
 
   private let barHeight: CGFloat = 14
@@ -27,11 +27,13 @@ struct PlayerProgressView: View {
     HStack(spacing: 12) {
       Text(timeRemaining)
         .font(.chicagoRegular(size: 24))
+        .lineLimit(1)
         .foregroundStyle(Color.Pod.displayBlack)
+        .frame(width: 58, alignment: .center)
       
       GeometryReader { geo in
         let innerHeight = max(0, barHeight)
-        let innerWidth = max(0, geo.size.width - barLineWidth * 2)
+        let innerWidth = max(0, geo.size.width)
         let fillWidth = innerWidth * clampedProgress
         
         if innerHeight > 0 && fillWidth > 0 {
@@ -52,7 +54,7 @@ struct PlayerProgressView: View {
 }
 
 #Preview {
-  PlayerProgressView(progress: 0.5, timeElapsed: "2:24", timeRemaining: "-2:21")
+  PlayerProgressView(progress: 0.9, timeRemaining: "-02:21")
     .padding(30)
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 }

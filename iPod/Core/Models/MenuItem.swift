@@ -42,6 +42,7 @@ public struct TrackInfo: Equatable {
   public let artist: String?
   public let album: String?
   public let artwork: Data?
+  public let discNumber: Int?
   public let trackNumber: Int?
   public let year: Int?
   public let fileURL: URL
@@ -51,6 +52,7 @@ public struct TrackInfo: Equatable {
     artist: String? = nil,
     album: String? = nil,
     artwork: Data? = nil,
+    discNumber: Int? = nil,
     trackNumber: Int? = nil,
     year: Int? = nil,
     fileURL: URL
@@ -59,6 +61,7 @@ public struct TrackInfo: Equatable {
     self.artist = artist
     self.album = album
     self.artwork = artwork
+    self.discNumber = discNumber
     self.trackNumber = trackNumber
     self.year = year
     self.fileURL = fileURL

@@ -106,7 +106,6 @@ struct PlayerView: View {
         ZStack {
           PlayerProgressView(
             progress: store.progress,
-            timeElapsed: store.timeElapsedString,
             timeRemaining: store.timeRemainingString
           )
           .offset(x: showsVolumeView ? -width : 0)

@@ -44,6 +44,7 @@ final class LiveMediaLibrary: MediaLibrary {
           artist: item.artist,
           album: item.albumTitle,
           artwork: artworkData,
+          discNumber: item.discNumber > 0 ? item.discNumber : nil,
           trackNumber: item.albumTrackNumber > 0 ? item.albumTrackNumber : nil,
           year: item.releaseDate.flatMap {
             Calendar.current.dateComponents([.year], from: $0).year
