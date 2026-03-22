@@ -24,7 +24,11 @@ struct PlayerProgressView: View {
   // MARK: - Body
 
   var body: some View {
-    VStack(spacing: 8) {
+    HStack(spacing: 12) {
+      Text(timeRemaining)
+        .font(.chicagoRegular(size: 24))
+        .foregroundStyle(Color.Pod.displayBlack)
+      
       GeometryReader { geo in
         let innerHeight = max(0, barHeight)
         let innerWidth = max(0, geo.size.width - barLineWidth * 2)
@@ -43,14 +47,12 @@ struct PlayerProgressView: View {
         RoundedRectangle(cornerRadius: cornerRadius)
           .stroke(Color.Pod.displayBlack, lineWidth: barLineWidth)
       )
-      
-      HStack {
-        Text(timeElapsed)
-        Spacer()
-        Text(timeRemaining)
-      }
-      .font(.chicagoRegular(size: 24))
-      .foregroundStyle(Color.Pod.displayBlack)
     }
   }
+}
+
+#Preview {
+  PlayerProgressView(progress: 0.5, timeElapsed: "2:24", timeRemaining: "-2:21")
+    .padding(30)
+    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
 }

@@ -48,11 +48,13 @@ struct MenuView: View {
       Group {
         if itemId == PodFeature.nowPlayingMenuID {
           PlayerView(
-            store: store.scope(state: \.player, action: \.player)
+            store: store.scope(state: \.player, action: \.player),
+            isActive: isActive
           )
         } else if let item = store.menuTree.item(withId: itemId), item.isPlayable {
           PlayerView(
-            store: store.scope(state: \.player, action: \.player)
+            store: store.scope(state: \.player, action: \.player),
+            isActive: isActive
           )
           
         } else if let children = items(for: itemId) {

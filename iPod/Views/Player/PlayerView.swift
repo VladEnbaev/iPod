@@ -5,14 +5,22 @@ import ComposableArchitecture
 
 struct PlayerView: View {
 
+  private static let volumeStep: Float = 0.05
+  private static let volumeOverlayDuration: TimeInterval = 1.2
+
   // MARK: - Properties
 
   let store: StoreOf<PlayerFeature>
+  let isActive: Bool
+
+  @State private var showsVolumeView = false
+  @State private var hideVolumeTask: Task<Void, Never>?
 
   // MARK: - Init
 
-  init(store: StoreOf<PlayerFeature>) {
+  init(store: StoreOf<PlayerFeature>, isActive: Bool = true) {
     self.store = store
+    self.isActive = isActive
   }
 
   // MARK: - Body
@@ -24,17 +32,30 @@ struct PlayerView: View {
           .padding(.bottom, 8)
 
         trackInfo
-          .padding(.bottom, 16)
+          .padding(.bottom, 24)
 
-        PlayerProgressView(
-          progress: store.progress,
-          timeElapsed: store.timeElapsedString,
-          timeRemaining: store.timeRemainingString
-        )
+        footer
       }
       .padding(10)
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       .background(Color.Pod.displayWhite)
+      .onReceive(ScrollWheelEventsPublisher.shared.events) { event in
+        guard isActive else { return }
+
+        switch event {
+        case let .scrolled(direction):
+          let currentVolume = store.volume
+          showVolumeView()
+          adjustVolume(currentVolume: currentVolume, direction: direction)
+        default:
+          break
+        }
+      }
+      .onDisappear {
+        hideVolumeTask?.cancel()
+        hideVolumeTask = nil
+        showsVolumeView = false
+      }
     }
   }
 
@@ -73,6 +94,52 @@ struct PlayerView: View {
           .foregroundStyle(Color.Pod.displayBlack)
       }
       .frame(maxWidth: .infinity, alignment: .leading)
+    }
+  }
+  
+  @ViewBuilder
+  private var footer: some View {
+    GeometryReader { proxy in
+      let width = proxy.size.width
+      
+      WithPerceptionTracking {
+        ZStack {
+          PlayerProgressView(
+            progress: store.progress,
+            timeElapsed: store.timeElapsedString,
+            timeRemaining: store.timeRemainingString
+          )
+          .offset(x: showsVolumeView ? -width : 0)
+          .opacity(showsVolumeView ? 0 : 1)
+          
+          PlayerVolumeView(volume: Double(store.volume))
+            .offset(x: showsVolumeView ? 0 : width)
+            .opacity(showsVolumeView ? 1 : 0)
+        }
+        .frame(width: proxy.size.width, height: proxy.size.height, alignment: .center)
+        .animation(.smooth(duration: 0.2), value: showsVolumeView)
+      }
+    }
+    .frame(height: 20, alignment: .center)
+  }
+
+  private func adjustVolume(currentVolume: Float, direction: WheelScrollDirection) {
+    let delta = direction == .right ? Self.volumeStep : -Self.volumeStep
+    let volume = min(1, max(0, currentVolume + delta))
+    store.send(.setVolume(volume))
+  }
+
+  private func showVolumeView() {
+    showsVolumeView = true
+
+    hideVolumeTask?.cancel()
+    hideVolumeTask = Task { @MainActor in
+      let delay = UInt64(Self.volumeOverlayDuration * 1_000_000_000)
+      try? await Task.sleep(nanoseconds: delay)
+
+      guard !Task.isCancelled else { return }
+
+      showsVolumeView = false
     }
   }
 
