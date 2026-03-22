@@ -9,13 +9,13 @@ enum MediaLibraryError: Error {
 
 // MARK: - Media Library Client
 
-protocol MediaLibraryClient {
+protocol MediaLibrary {
   func fetchSongs() async throws(MediaLibraryError) -> [MenuItem]
 }
 
 // MARK: - Live Media Library Implementation
 
-final class LiveMediaLibraryClient: MediaLibraryClient {
+final class LiveMediaLibrary: MediaLibrary {
   
   // MARK: - Init
   
